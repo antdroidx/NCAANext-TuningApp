@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
+using System.Xml;
 
 namespace NEXT_Tuning_App
 {
@@ -21,16 +24,43 @@ namespace NEXT_Tuning_App
             ToggleUI(false);
         }
 
+        //Version Check
+        private void CheckVersion()
+        {
+            double currentVersion = 16.4;
+            string x = "";
+            for (int i = 0; i < 4; i++)
+            {
+                x += Convert.ToChar(ReadByte(originBase + VersionNum + i));
+
+            }
+
+
+            if (Convert.ToDouble(x) >= 16.4)
+            {
+                //MessageBox.Show("Correct Version Loaded");
+            }
+            else
+            {
+                MessageBox.Show("This app only works with version " + currentVersion + " or higher.\n\nThe loaded file is on version " + x + ".");
+            }
+
+        }
+
+        //Toggle UI Elements
         private void ToggleUI(bool enabled)
         {
-            numPlaysPerGame.Enabled = enabled;
-            numAutoBids.Enabled = enabled;
-            numStartYear.Enabled = enabled;
-            btnPickTeamTextColor.Enabled = enabled;
-            btnMatchUpTextColor.Enabled = enabled;
             btnSave.Enabled = enabled;
-            groupSpeedNerf.Enabled = enabled;
+
+            groupStartYear.Enabled = enabled;
+            groupBowlRankings.Enabled = enabled;
+            groupOptOut.Enabled = enabled;
+            groupSimGameLength.Enabled = enabled;
+            groupConfChamps.Enabled = enabled;
             groupFatigue.Enabled = enabled;
+            groupSpeedNerf.Enabled = enabled;
+            groupColors.Enabled = enabled;
+
         }
 
         //Open File
@@ -50,238 +80,53 @@ namespace NEXT_Tuning_App
                 return;
             }
 
+            CheckVersion();
+
             lblFile.Text = $"{Path.GetFileName(ofd.FileName)} (SLUS @ 0x{originBase:X})";
             LoadValues();
             ToggleUI(true);
         }
 
-        //Load Default Values from File
-        private void LoadValues()
+
+        //Load Config
+        private void btnLoad_Click(object sender, EventArgs e)
         {
-            //Plays Per Game Slider
-            byte plays = ReadByte(originBase + PlaysPerGameOffset);
-            byte autoBids = ReadByte(originBase + AutoBidOffset);
+            using OpenFileDialog ofd = new() { Filter = "All Files (*.*)|*.*" };
+            if (ofd.ShowDialog() != DialogResult.OK) return;
 
-            numPlaysPerGame.Value = Math.Clamp(plays, (byte)80, (byte)120);
-            numAutoBids.Value = Math.Clamp(autoBids, (byte)0, (byte)12);
-
-            // Starting Year (read from first offset)
-            ushort year = ReadUInt16LE(originBase + StartYearOffsets[0]);
-            numStartYear.Value = Math.Clamp((decimal)year, numStartYear.Minimum, numStartYear.Maximum);
-
-            //Fatigue Sliders
-            float jv = ReadFloatHighWordOnly(originBase + FatigueJVOffset);
-            float v = ReadFloatWordSwapped(originBase + FatigueVarsityOffset);
-            float aa = ReadFloatWordSwapped(originBase + FatigueAAOffset);
-            float h = ReadFloatWordSwapped(originBase + FatigueHeismanOffset);
-
-            numFatigueJV.Value = (decimal)jv;
-            numFatigueVarsity.Value = (decimal)v;
-            numFatigueAA.Value = (decimal)aa;
-            numFatigueHeisman.Value = (decimal)h;
-
-
-            //User Team Text Color
-            byte r = ReadByte(originBase + UserTeamTextR_Offset);
-            byte g = ReadByte(originBase + UserTeamTextG_Offset);
-            byte b = ReadByte(originBase + UserTeamTextB_Offset);
-
-            teamTextColor = System.Drawing.Color.FromArgb(r, g, b);
-            pnlTeamTextColorPreview.BackColor = teamTextColor;
-
-            lblTeamTextColorRaw.Text = $"RGB: {r},{g},{b} (R:{r:X2} G:{g:X2} B:{b:X2})";
-
-            //Matchup Text Color
-            byte r2 = ReadByte(originBase + MatchUpTextR_Offset);
-            byte g2 = ReadByte(originBase + MatchUpTextG_Offset);
-            byte b2 = ReadByte(originBase + MatchUpTextB_Offset);
-
-            matchupTextColor = System.Drawing.Color.FromArgb(r2, g2, b2);
-            pnlMatchUpColorPreview.BackColor = matchupTextColor;
-
-            lblMatchUpColorRaw.Text = $"RGB: {r2},{g2},{b2} (R:{r2:X2} G:{g2:X2} B:{b2:X2})";
-
-            //Speed Nerf Mod
-            byte[] SpeedNerf1Loaded = new byte[8];
-            for (int i = 0; i < SpeedNerf1Loaded.Length; i++)
+            List<decimal> config = new List<decimal>();
+            string filePath = ofd.FileName;
+            StreamReader sr = new StreamReader(filePath);
+            int Row = 0;
+            while (!sr.EndOfStream)
             {
-                SpeedNerf1Loaded[i] = ReadByte(originBase + SpeedNerfOffset1 + i);
-            }
-
-            byte[] SpeedNerf2Loaded = new byte[88];
-            for (int i = 0; i < SpeedNerf2Loaded.Length; i++)
-            {
-                SpeedNerf2Loaded[i] = ReadByte(originBase + SpeedNerfOffset2 + i);
-            }
-
-            // Compare array contents instead of references
-            if (SpeedNerf1Loaded.SequenceEqual(SpeedNerfUpdate1))
-            {
-                SpeedNerfBox.Checked = true;
-            }
-            else
-            {
-                SpeedNerfBox.Checked = false;
-            }
-        }
-
-        //Save Data
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            //Save Plays Per Game Sim
-            WriteByte(originBase + PlaysPerGameOffset, (byte)numPlaysPerGame.Value);
-            WriteByte(originBase + AutoBidOffset, (byte)numAutoBids.Value);
-
-            //Save Starting Year
-            ushort year = (ushort)numStartYear.Value;
-            ushort yearPlus1 = (ushort)(year + 1);
-
-            foreach (int off in StartYearOffsets)
-                WriteUInt16LE(originBase + off, year);
-
-            foreach (int off in StartYearPlus1Offsets)
-                WriteUInt16LE(originBase + off, yearPlus1);
-
-            //Save Fatigue Sliders
-            WriteFloatHighWordOnly(originBase + FatigueJVOffset, (float)numFatigueJV.Value);
-            WriteFloatWordSwapped(originBase + FatigueVarsityOffset, (float)numFatigueVarsity.Value);
-            WriteFloatWordSwapped(originBase + FatigueAAOffset, (float)numFatigueAA.Value);
-            WriteFloatWordSwapped(originBase + FatigueHeismanOffset, (float)numFatigueHeisman.Value);
-
-            //Save User Text Color
-            WriteByte(originBase + UserTeamTextR_Offset, teamTextColor.R);
-            WriteByte(originBase + UserTeamTextG_Offset, teamTextColor.G);
-            WriteByte(originBase + UserTeamTextB_Offset, teamTextColor.B);
-
-
-            //Save MatchUp Text Color
-            WriteByte(originBase + MatchUpTextR_Offset, matchupTextColor.R);
-            WriteByte(originBase + MatchUpTextG_Offset, matchupTextColor.G);
-            WriteByte(originBase + MatchUpTextB_Offset, matchupTextColor.B);
-
-
-            //Speed Nerf Mod
-            if (SpeedNerfBox.Checked)
-            {
-                for (int i = 0; i < SpeedNerfUpdate1.Length; i++)
+                string[] Line = sr.ReadLine().Split(':');
+                for (int column = 0; column < Line.Length; column++)
                 {
-                    WriteByte(originBase + SpeedNerfOffset1 + i, SpeedNerfUpdate1[i]);
+                    if(Row == 0)
+                    {
+                        if (Line[0].Equals("User Configuration"))
+                        {
+                            MessageBox.Show("Valid");
+                        }
+                        else
+                        {
+                            MessageBox.Show("This is not a configuration file.");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (column == 1) config.Add(Convert.ToDecimal(Line[column]));
+                    }
                 }
-                for (int i = 0; i < SpeedNerfUpdate2.Length; i++)
-                {
-                    WriteByte(originBase + SpeedNerfOffset2 + i, SpeedNerfUpdate2[i]);
-                }
-
-                int speedAmt = Convert.ToInt32(SpeedNerfAmount.Value) * 255 / 100;
-                sbyte speedAmtByte = unchecked((sbyte)speedAmt);
-                WriteSByte(originBase + SpeedNerfAmtOffset, speedAmtByte);
+                Row++;
             }
-            else
-            {
-                for (int i = 0; i < SpeedNerfRevert1.Length; i++)
-                {
-                    WriteByte(originBase + SpeedNerfOffset1 + i, SpeedNerfRevert1[i]);
-                }
-                for (int i = 0; i < SpeedNerfRevert2.Length; i++)
-                {
-                    WriteByte(originBase + SpeedNerfOffset2 + i, SpeedNerfRevert2[i]);
-                }
-            }
+            sr.Close();
 
-
-            //Clear Memory
-            fs!.Flush();
-
-            MessageBox.Show("Changes Saved.");
+            LoadConfig(config);
+            ToggleUI(true);
         }
-
-        #region Read/Write Data
-
-        private byte ReadByte(long offset)
-        {
-            fs!.Position = offset;
-            return (byte)fs.ReadByte();
-        }
-
-        private void WriteByte(long offset, byte value)
-        {
-            fs!.Position = offset;
-            fs.WriteByte(value);
-            fs.Flush();
-        }
-
-        private sbyte ReadSByte(long offset)
-        {
-            fs!.Position = offset;
-            int b = fs.ReadByte();
-            if (b < 0) throw new EndOfStreamException("Unexpected EOF reading SByte.");
-            return unchecked((sbyte)b);
-        }
-
-        private void WriteSByte(long offset, sbyte value)
-        {
-            fs!.Position = offset;
-            fs.WriteByte(unchecked((byte)value));
-            fs.Flush();
-        }
-
-        private ushort ReadUInt16LE(long offset)
-        {
-            fs!.Position = offset;
-            int b0 = fs.ReadByte();
-            int b1 = fs.ReadByte();
-            if (b0 < 0 || b1 < 0) throw new EndOfStreamException("Unexpected EOF reading UInt16.");
-            return (ushort)(b0 | (b1 << 8));
-        }
-
-        private void WriteUInt16LE(long offset, ushort value)
-        {
-            fs!.Position = offset;
-            fs.WriteByte((byte)(value & 0xFF));        // low
-            fs.WriteByte((byte)((value >> 8) & 0xFF)); // high
-        }
-
-        /// <summary>
-        /// Reads a 32-bit float stored as 16-bit word-swapped: [hiWordLE][loWordLE]
-        /// where float bits = (hiWord << 16) | loWord.
-        /// </summary>
-        private float ReadFloatWordSwapped(long offset)
-        {
-            ushort hi = ReadUInt16LE(offset);
-            ushort lo = ReadUInt16LE(offset + 4);
-            uint bits = ((uint)hi << 16) | lo;
-            return BitConverter.Int32BitsToSingle((int)bits);
-        }
-
-        private void WriteFloatWordSwapped(long offset, float value)
-        {
-            uint bits = (uint)BitConverter.SingleToInt32Bits(value);
-            ushort hi = (ushort)(bits >> 16);
-            ushort lo = (ushort)(bits & 0xFFFF);
-
-            WriteUInt16LE(offset, hi);
-            WriteUInt16LE(offset + 4, lo);
-        }
-
-        /// <summary>
-        /// Reads a float where only the high 16 bits are stored (JV case).
-        /// low word assumed 0x0000.
-        /// </summary>
-        private float ReadFloatHighWordOnly(long offset)
-        {
-            ushort hi = ReadUInt16LE(offset);
-            uint bits = ((uint)hi << 16); // lo = 0
-            return BitConverter.Int32BitsToSingle((int)bits);
-        }
-
-        private void WriteFloatHighWordOnly(long offset, float value)
-        {
-            uint bits = (uint)BitConverter.SingleToInt32Bits(value);
-            ushort hi = (ushort)(bits >> 16);
-            WriteUInt16LE(offset, hi);
-        }
-
-        #endregion
 
         #region Color Pickers
         private void btnPickTeamTextColor_Click(object sender, EventArgs e)
@@ -342,6 +187,7 @@ namespace NEXT_Tuning_App
             {
                 SpeedNerfAmount.Enabled = true;
                 SpeedNerfAmount.ReadOnly = false;
+
                 sbyte speedAmt = ReadSByte(originBase + SpeedNerfAmtOffset);
                 double speedVal = Convert.ToDouble(speedAmt) / 255.0 * 100.0;
 
@@ -361,6 +207,22 @@ namespace NEXT_Tuning_App
             {
                 SpeedNerfAmount.Enabled = false;
                 SpeedNerfAmount.ReadOnly = true;
+            }
+        }
+
+        private void OptOutDisabled_CheckedChanged(object sender, EventArgs e)
+        {
+            if (OptOutBox.Checked)
+            {
+                numOptOutRating.Enabled = true;
+                numOptOutRating.ReadOnly = false;
+                numOptOutRating.Value = 80;
+            }
+            else
+            {
+                numOptOutRating.Enabled = false;
+                numOptOutRating.ReadOnly = true;
+                numOptOutRating.Value = 80;
             }
         }
 

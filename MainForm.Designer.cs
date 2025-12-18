@@ -9,7 +9,6 @@ namespace NEXT_Tuning_App
         private System.Windows.Forms.NumericUpDown numPlaysPerGame;
         private System.Windows.Forms.NumericUpDown numAutoBids;
         private System.Windows.Forms.NumericUpDown numStartYear;
-        private System.Windows.Forms.Label lblStartYearCaption;
 
         protected override void Dispose(bool disposing)
         {
@@ -25,7 +24,6 @@ namespace NEXT_Tuning_App
             lblFile = new Label();
             numPlaysPerGame = new NumericUpDown();
             numAutoBids = new NumericUpDown();
-            lblStartYearCaption = new Label();
             numStartYear = new NumericUpDown();
             numFatigueJV = new NumericUpDown();
             numFatigueVarsity = new NumericUpDown();
@@ -38,14 +36,13 @@ namespace NEXT_Tuning_App
             label3 = new Label();
             label2 = new Label();
             label1 = new Label();
-            label5 = new Label();
-            label6 = new Label();
             btnPickTeamTextColor = new Button();
             pnlTeamTextColorPreview = new Panel();
             lblTeamTextColorRaw = new Label();
             PPGBox = new TextBox();
             label7 = new Label();
             groupBox2 = new GroupBox();
+            btnLoad = new Button();
             label8 = new Label();
             label10 = new Label();
             label11 = new Label();
@@ -58,6 +55,18 @@ namespace NEXT_Tuning_App
             label15 = new Label();
             SpeedNerfAmount = new NumericUpDown();
             SpeedNerfBox = new CheckBox();
+            pictureBox1 = new PictureBox();
+            pictureBox2 = new PictureBox();
+            groupOptOut = new GroupBox();
+            label16 = new Label();
+            numOptOutRating = new NumericUpDown();
+            OptOutBox = new CheckBox();
+            groupStartYear = new GroupBox();
+            groupSimGameLength = new GroupBox();
+            groupConfChamps = new GroupBox();
+            groupBowlRankings = new GroupBox();
+            BowlRankingBox = new CheckBox();
+            groupColors = new GroupBox();
             ((System.ComponentModel.ISupportInitialize)numPlaysPerGame).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numAutoBids).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numStartYear).BeginInit();
@@ -69,14 +78,23 @@ namespace NEXT_Tuning_App
             groupBox2.SuspendLayout();
             groupSpeedNerf.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)SpeedNerfAmount).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).BeginInit();
+            groupOptOut.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numOptOutRating).BeginInit();
+            groupStartYear.SuspendLayout();
+            groupSimGameLength.SuspendLayout();
+            groupConfChamps.SuspendLayout();
+            groupBowlRankings.SuspendLayout();
+            groupColors.SuspendLayout();
             SuspendLayout();
             // 
             // btnOpen
             // 
-            btnOpen.BackColor = Color.SkyBlue;
-            btnOpen.Location = new Point(17, 26);
+            btnOpen.BackColor = Color.PowderBlue;
+            btnOpen.Location = new Point(6, 25);
             btnOpen.Name = "btnOpen";
-            btnOpen.Size = new Size(75, 31);
+            btnOpen.Size = new Size(100, 30);
             btnOpen.TabIndex = 3;
             btnOpen.Text = "Open";
             btnOpen.UseVisualStyleBackColor = false;
@@ -84,10 +102,10 @@ namespace NEXT_Tuning_App
             // 
             // btnSave
             // 
-            btnSave.BackColor = Color.SkyBlue;
-            btnSave.Location = new Point(105, 26);
+            btnSave.BackColor = Color.PowderBlue;
+            btnSave.Location = new Point(234, 25);
             btnSave.Name = "btnSave";
-            btnSave.Size = new Size(75, 31);
+            btnSave.Size = new Size(100, 30);
             btnSave.TabIndex = 4;
             btnSave.Text = "Save";
             btnSave.UseVisualStyleBackColor = false;
@@ -103,7 +121,7 @@ namespace NEXT_Tuning_App
             // 
             // numPlaysPerGame
             // 
-            numPlaysPerGame.Location = new Point(12, 244);
+            numPlaysPerGame.Location = new Point(17, 27);
             numPlaysPerGame.Maximum = new decimal(new int[] { 120, 0, 0, 0 });
             numPlaysPerGame.Minimum = new decimal(new int[] { 80, 0, 0, 0 });
             numPlaysPerGame.Name = "numPlaysPerGame";
@@ -115,7 +133,7 @@ namespace NEXT_Tuning_App
             // 
             // numAutoBids
             // 
-            numAutoBids.Location = new Point(12, 348);
+            numAutoBids.Location = new Point(17, 25);
             numAutoBids.Maximum = new decimal(new int[] { 12, 0, 0, 0 });
             numAutoBids.Name = "numAutoBids";
             numAutoBids.Size = new Size(75, 22);
@@ -123,18 +141,9 @@ namespace NEXT_Tuning_App
             numAutoBids.TextAlign = HorizontalAlignment.Center;
             numAutoBids.Value = new decimal(new int[] { 5, 0, 0, 0 });
             // 
-            // lblStartYearCaption
-            // 
-            lblStartYearCaption.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Bold);
-            lblStartYearCaption.Location = new Point(12, 136);
-            lblStartYearCaption.Name = "lblStartYearCaption";
-            lblStartYearCaption.Size = new Size(258, 20);
-            lblStartYearCaption.TabIndex = 0;
-            lblStartYearCaption.Text = "Dynasty Starting Year";
-            // 
             // numStartYear
             // 
-            numStartYear.Location = new Point(12, 159);
+            numStartYear.Location = new Point(19, 23);
             numStartYear.Maximum = new decimal(new int[] { 2200, 0, 0, 0 });
             numStartYear.Minimum = new decimal(new int[] { 1900, 0, 0, 0 });
             numStartYear.Name = "numStartYear";
@@ -209,7 +218,7 @@ namespace NEXT_Tuning_App
             groupFatigue.Controls.Add(numFatigueAA);
             groupFatigue.Location = new Point(370, 13);
             groupFatigue.Name = "groupFatigue";
-            groupFatigue.Size = new Size(193, 256);
+            groupFatigue.Size = new Size(193, 272);
             groupFatigue.TabIndex = 14;
             groupFatigue.TabStop = false;
             groupFatigue.Text = "Fatigue Slider";
@@ -218,7 +227,7 @@ namespace NEXT_Tuning_App
             // 
             label13.AutoSize = true;
             label13.Font = new Font("Microsoft Sans Serif", 8.25F);
-            label13.Location = new Point(2, 226);
+            label13.Location = new Point(5, 241);
             label13.Name = "label13";
             label13.Size = new Size(182, 13);
             label13.TabIndex = 19;
@@ -228,7 +237,7 @@ namespace NEXT_Tuning_App
             // 
             label9.AutoSize = true;
             label9.Font = new Font("Microsoft Sans Serif", 8.25F);
-            label9.Location = new Point(2, 205);
+            label9.Location = new Point(5, 220);
             label9.Name = "label9";
             label9.Size = new Size(185, 13);
             label9.TabIndex = 18;
@@ -274,30 +283,12 @@ namespace NEXT_Tuning_App
             label1.TabIndex = 14;
             label1.Text = "Junior Varsity";
             // 
-            // label5
-            // 
-            label5.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Bold);
-            label5.Location = new Point(12, 221);
-            label5.Name = "label5";
-            label5.Size = new Size(258, 20);
-            label5.TabIndex = 15;
-            label5.Text = "Sim Game Length Factor";
-            // 
-            // label6
-            // 
-            label6.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Bold);
-            label6.Location = new Point(12, 325);
-            label6.Name = "label6";
-            label6.Size = new Size(258, 20);
-            label6.TabIndex = 16;
-            label6.Text = "No. of Conf Champ Automatic Playoff Spots";
-            // 
             // btnPickTeamTextColor
             // 
             btnPickTeamTextColor.BackColor = Color.SkyBlue;
-            btnPickTeamTextColor.Location = new Point(601, 34);
+            btnPickTeamTextColor.Location = new Point(12, 42);
             btnPickTeamTextColor.Name = "btnPickTeamTextColor";
-            btnPickTeamTextColor.Size = new Size(192, 33);
+            btnPickTeamTextColor.Size = new Size(223, 33);
             btnPickTeamTextColor.TabIndex = 17;
             btnPickTeamTextColor.Text = "Color Chooser";
             btnPickTeamTextColor.UseVisualStyleBackColor = false;
@@ -305,16 +296,16 @@ namespace NEXT_Tuning_App
             // 
             // pnlTeamTextColorPreview
             // 
-            pnlTeamTextColorPreview.Location = new Point(601, 73);
+            pnlTeamTextColorPreview.Location = new Point(12, 81);
             pnlTeamTextColorPreview.Name = "pnlTeamTextColorPreview";
-            pnlTeamTextColorPreview.Size = new Size(192, 47);
+            pnlTeamTextColorPreview.Size = new Size(223, 47);
             pnlTeamTextColorPreview.TabIndex = 18;
             // 
             // lblTeamTextColorRaw
             // 
             lblTeamTextColorRaw.AutoSize = true;
             lblTeamTextColorRaw.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lblTeamTextColorRaw.Location = new Point(601, 123);
+            lblTeamTextColorRaw.Location = new Point(12, 131);
             lblTeamTextColorRaw.Name = "lblTeamTextColorRaw";
             lblTeamTextColorRaw.Size = new Size(66, 15);
             lblTeamTextColorRaw.TabIndex = 19;
@@ -325,7 +316,7 @@ namespace NEXT_Tuning_App
             PPGBox.BackColor = SystemColors.Info;
             PPGBox.Enabled = false;
             PPGBox.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            PPGBox.Location = new Point(111, 244);
+            PPGBox.Location = new Point(115, 24);
             PPGBox.Name = "PPGBox";
             PPGBox.ReadOnly = true;
             PPGBox.Size = new Size(52, 25);
@@ -335,7 +326,7 @@ namespace NEXT_Tuning_App
             // label7
             // 
             label7.AutoSize = true;
-            label7.Location = new Point(169, 249);
+            label7.Location = new Point(170, 28);
             label7.Name = "label7";
             label7.Size = new Size(166, 16);
             label7.TabIndex = 21;
@@ -343,31 +334,43 @@ namespace NEXT_Tuning_App
             // 
             // groupBox2
             // 
+            groupBox2.Controls.Add(btnLoad);
             groupBox2.Controls.Add(lblFile);
             groupBox2.Controls.Add(btnOpen);
             groupBox2.Controls.Add(btnSave);
             groupBox2.Location = new Point(12, 12);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(323, 97);
+            groupBox2.Size = new Size(342, 97);
             groupBox2.TabIndex = 22;
             groupBox2.TabStop = false;
             groupBox2.Text = "Menu";
+            // 
+            // btnLoad
+            // 
+            btnLoad.BackColor = Color.PowderBlue;
+            btnLoad.Location = new Point(118, 25);
+            btnLoad.Name = "btnLoad";
+            btnLoad.Size = new Size(100, 30);
+            btnLoad.TabIndex = 6;
+            btnLoad.Text = "Load Config";
+            btnLoad.UseVisualStyleBackColor = false;
+            btnLoad.Click += btnLoad_Click;
             // 
             // label8
             // 
             label8.AutoSize = true;
             label8.BackColor = Color.PaleTurquoise;
             label8.Font = new Font("Microsoft Sans Serif", 9.75F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label8.Location = new Point(509, 384);
+            label8.Location = new Point(494, 400);
             label8.Name = "label8";
             label8.Size = new Size(327, 16);
             label8.TabIndex = 23;
-            label8.Text = "NCAA Next Tuning App v1.0  by Antdroid + JDHalfrack";
+            label8.Text = "NCAA Next Tuning App v1.1  by Antdroid + JDHalfrack";
             // 
             // label10
             // 
             label10.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Bold);
-            label10.Location = new Point(601, 13);
+            label10.Location = new Point(12, 27);
             label10.Name = "label10";
             label10.Size = new Size(192, 20);
             label10.TabIndex = 24;
@@ -377,7 +380,7 @@ namespace NEXT_Tuning_App
             // 
             label11.AutoSize = true;
             label11.Font = new Font("Microsoft Sans Serif", 8.25F);
-            label11.Location = new Point(12, 290);
+            label11.Location = new Point(17, 65);
             label11.Name = "label11";
             label11.Size = new Size(174, 13);
             label11.TabIndex = 19;
@@ -387,7 +390,7 @@ namespace NEXT_Tuning_App
             // 
             label12.AutoSize = true;
             label12.Font = new Font("Microsoft Sans Serif", 8.25F);
-            label12.Location = new Point(12, 384);
+            label12.Location = new Point(115, 29);
             label12.Name = "label12";
             label12.Size = new Size(85, 13);
             label12.TabIndex = 25;
@@ -396,7 +399,7 @@ namespace NEXT_Tuning_App
             // label14
             // 
             label14.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Bold);
-            label14.Location = new Point(601, 211);
+            label14.Location = new Point(12, 178);
             label14.Name = "label14";
             label14.Size = new Size(192, 20);
             label14.TabIndex = 29;
@@ -406,7 +409,7 @@ namespace NEXT_Tuning_App
             // 
             lblMatchUpColorRaw.AutoSize = true;
             lblMatchUpColorRaw.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lblMatchUpColorRaw.Location = new Point(601, 321);
+            lblMatchUpColorRaw.Location = new Point(12, 290);
             lblMatchUpColorRaw.Name = "lblMatchUpColorRaw";
             lblMatchUpColorRaw.Size = new Size(66, 15);
             lblMatchUpColorRaw.TabIndex = 28;
@@ -414,17 +417,17 @@ namespace NEXT_Tuning_App
             // 
             // pnlMatchUpColorPreview
             // 
-            pnlMatchUpColorPreview.Location = new Point(601, 271);
+            pnlMatchUpColorPreview.Location = new Point(12, 240);
             pnlMatchUpColorPreview.Name = "pnlMatchUpColorPreview";
-            pnlMatchUpColorPreview.Size = new Size(192, 47);
+            pnlMatchUpColorPreview.Size = new Size(223, 47);
             pnlMatchUpColorPreview.TabIndex = 27;
             // 
             // btnMatchUpTextColor
             // 
             btnMatchUpTextColor.BackColor = Color.SkyBlue;
-            btnMatchUpTextColor.Location = new Point(601, 232);
+            btnMatchUpTextColor.Location = new Point(12, 201);
             btnMatchUpTextColor.Name = "btnMatchUpTextColor";
-            btnMatchUpTextColor.Size = new Size(192, 33);
+            btnMatchUpTextColor.Size = new Size(223, 33);
             btnMatchUpTextColor.TabIndex = 26;
             btnMatchUpTextColor.Text = "Color Chooser";
             btnMatchUpTextColor.UseVisualStyleBackColor = false;
@@ -435,9 +438,9 @@ namespace NEXT_Tuning_App
             groupSpeedNerf.Controls.Add(label15);
             groupSpeedNerf.Controls.Add(SpeedNerfAmount);
             groupSpeedNerf.Controls.Add(SpeedNerfBox);
-            groupSpeedNerf.Location = new Point(370, 275);
+            groupSpeedNerf.Location = new Point(370, 291);
             groupSpeedNerf.Name = "groupSpeedNerf";
-            groupSpeedNerf.Size = new Size(193, 95);
+            groupSpeedNerf.Size = new Size(193, 106);
             groupSpeedNerf.TabIndex = 30;
             groupSpeedNerf.TabStop = false;
             groupSpeedNerf.Text = "Speed Nerf";
@@ -445,7 +448,7 @@ namespace NEXT_Tuning_App
             // label15
             // 
             label15.AutoSize = true;
-            label15.Location = new Point(77, 60);
+            label15.Location = new Point(79, 67);
             label15.Name = "label15";
             label15.Size = new Size(80, 16);
             label15.TabIndex = 2;
@@ -455,7 +458,7 @@ namespace NEXT_Tuning_App
             // 
             SpeedNerfAmount.Enabled = false;
             SpeedNerfAmount.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            SpeedNerfAmount.Location = new Point(12, 56);
+            SpeedNerfAmount.Location = new Point(14, 64);
             SpeedNerfAmount.Maximum = new decimal(new int[] { 1, 0, 0, int.MinValue });
             SpeedNerfAmount.Minimum = new decimal(new int[] { 50, 0, 0, int.MinValue });
             SpeedNerfAmount.Name = "SpeedNerfAmount";
@@ -470,40 +473,167 @@ namespace NEXT_Tuning_App
             SpeedNerfBox.AutoSize = true;
             SpeedNerfBox.Location = new Point(14, 30);
             SpeedNerfBox.Name = "SpeedNerfBox";
-            SpeedNerfBox.Size = new Size(153, 20);
+            SpeedNerfBox.Size = new Size(149, 20);
             SpeedNerfBox.TabIndex = 0;
-            SpeedNerfBox.Text = "Speed Nerf Disabled";
+            SpeedNerfBox.Text = "Speed Nerf Enabled";
             SpeedNerfBox.UseVisualStyleBackColor = true;
             SpeedNerfBox.CheckedChanged += SpeedNerfBox_CheckedChanged;
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
+            pictureBox1.Location = new Point(653, 330);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(168, 67);
+            pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox1.TabIndex = 31;
+            pictureBox1.TabStop = false;
+            // 
+            // pictureBox2
+            // 
+            pictureBox2.Image = (Image)resources.GetObject("pictureBox2.Image");
+            pictureBox2.Location = new Point(574, 330);
+            pictureBox2.Name = "pictureBox2";
+            pictureBox2.Size = new Size(73, 67);
+            pictureBox2.SizeMode = PictureBoxSizeMode.StretchImage;
+            pictureBox2.TabIndex = 32;
+            pictureBox2.TabStop = false;
+            // 
+            // groupOptOut
+            // 
+            groupOptOut.Controls.Add(label16);
+            groupOptOut.Controls.Add(numOptOutRating);
+            groupOptOut.Controls.Add(OptOutBox);
+            groupOptOut.Location = new Point(185, 115);
+            groupOptOut.Name = "groupOptOut";
+            groupOptOut.Size = new Size(169, 104);
+            groupOptOut.TabIndex = 33;
+            groupOptOut.TabStop = false;
+            groupOptOut.Text = "Bowl Opt-Out";
+            // 
+            // label16
+            // 
+            label16.AutoSize = true;
+            label16.Location = new Point(74, 69);
+            label16.Name = "label16";
+            label16.Size = new Size(70, 16);
+            label16.TabIndex = 2;
+            label16.Text = "Min Rating";
+            // 
+            // numOptOutRating
+            // 
+            numOptOutRating.Enabled = false;
+            numOptOutRating.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            numOptOutRating.Location = new Point(9, 65);
+            numOptOutRating.Maximum = new decimal(new int[] { 99, 0, 0, 0 });
+            numOptOutRating.Minimum = new decimal(new int[] { 40, 0, 0, 0 });
+            numOptOutRating.Name = "numOptOutRating";
+            numOptOutRating.ReadOnly = true;
+            numOptOutRating.Size = new Size(59, 24);
+            numOptOutRating.TabIndex = 1;
+            numOptOutRating.TextAlign = HorizontalAlignment.Center;
+            numOptOutRating.Value = new decimal(new int[] { 40, 0, 0, 0 });
+            // 
+            // OptOutBox
+            // 
+            OptOutBox.AutoSize = true;
+            OptOutBox.Location = new Point(12, 30);
+            OptOutBox.Name = "OptOutBox";
+            OptOutBox.Size = new Size(124, 20);
+            OptOutBox.TabIndex = 0;
+            OptOutBox.Text = "Opt Out Enabled";
+            OptOutBox.UseVisualStyleBackColor = true;
+            OptOutBox.CheckedChanged += OptOutDisabled_CheckedChanged;
+            // 
+            // groupStartYear
+            // 
+            groupStartYear.Controls.Add(numStartYear);
+            groupStartYear.Location = new Point(10, 115);
+            groupStartYear.Name = "groupStartYear";
+            groupStartYear.Size = new Size(169, 50);
+            groupStartYear.TabIndex = 34;
+            groupStartYear.TabStop = false;
+            groupStartYear.Text = "Dynasty Start Year";
+            // 
+            // groupSimGameLength
+            // 
+            groupSimGameLength.Controls.Add(numPlaysPerGame);
+            groupSimGameLength.Controls.Add(PPGBox);
+            groupSimGameLength.Controls.Add(label7);
+            groupSimGameLength.Controls.Add(label11);
+            groupSimGameLength.Location = new Point(12, 233);
+            groupSimGameLength.Name = "groupSimGameLength";
+            groupSimGameLength.Size = new Size(342, 90);
+            groupSimGameLength.TabIndex = 35;
+            groupSimGameLength.TabStop = false;
+            groupSimGameLength.Text = "Sim Game Length Factor";
+            // 
+            // groupConfChamps
+            // 
+            groupConfChamps.Controls.Add(numAutoBids);
+            groupConfChamps.Controls.Add(label12);
+            groupConfChamps.Location = new Point(12, 332);
+            groupConfChamps.Name = "groupConfChamps";
+            groupConfChamps.Size = new Size(342, 65);
+            groupConfChamps.TabIndex = 36;
+            groupConfChamps.TabStop = false;
+            groupConfChamps.Text = "Conf Champ Auto-Bids for Playoffs ";
+            // 
+            // groupBowlRankings
+            // 
+            groupBowlRankings.Controls.Add(BowlRankingBox);
+            groupBowlRankings.Location = new Point(10, 167);
+            groupBowlRankings.Name = "groupBowlRankings";
+            groupBowlRankings.Size = new Size(169, 52);
+            groupBowlRankings.TabIndex = 37;
+            groupBowlRankings.TabStop = false;
+            groupBowlRankings.Text = "Bowl Rankings";
+            // 
+            // BowlRankingBox
+            // 
+            BowlRankingBox.AutoSize = true;
+            BowlRankingBox.Location = new Point(8, 21);
+            BowlRankingBox.Name = "BowlRankingBox";
+            BowlRankingBox.Size = new Size(158, 20);
+            BowlRankingBox.TabIndex = 0;
+            BowlRankingBox.Text = "Bowls Affect Rankings";
+            BowlRankingBox.UseVisualStyleBackColor = true;
+            // 
+            // groupColors
+            // 
+            groupColors.Controls.Add(btnPickTeamTextColor);
+            groupColors.Controls.Add(pnlTeamTextColorPreview);
+            groupColors.Controls.Add(btnMatchUpTextColor);
+            groupColors.Controls.Add(pnlMatchUpColorPreview);
+            groupColors.Controls.Add(label10);
+            groupColors.Controls.Add(lblMatchUpColorRaw);
+            groupColors.Controls.Add(lblTeamTextColorRaw);
+            groupColors.Controls.Add(label14);
+            groupColors.Location = new Point(574, 12);
+            groupColors.Name = "groupColors";
+            groupColors.Size = new Size(247, 311);
+            groupColors.TabIndex = 38;
+            groupColors.TabStop = false;
+            groupColors.Text = "Colorize";
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.WhiteSmoke;
-            ClientSize = new Size(838, 407);
+            ClientSize = new Size(835, 426);
+            Controls.Add(groupBowlRankings);
+            Controls.Add(groupConfChamps);
+            Controls.Add(groupSimGameLength);
+            Controls.Add(groupStartYear);
+            Controls.Add(groupOptOut);
+            Controls.Add(pictureBox2);
+            Controls.Add(pictureBox1);
             Controls.Add(groupSpeedNerf);
-            Controls.Add(label14);
-            Controls.Add(lblMatchUpColorRaw);
-            Controls.Add(pnlMatchUpColorPreview);
-            Controls.Add(btnMatchUpTextColor);
-            Controls.Add(label12);
-            Controls.Add(label11);
-            Controls.Add(label10);
             Controls.Add(label8);
             Controls.Add(groupBox2);
-            Controls.Add(label7);
-            Controls.Add(PPGBox);
-            Controls.Add(lblTeamTextColorRaw);
-            Controls.Add(pnlTeamTextColorPreview);
-            Controls.Add(btnPickTeamTextColor);
-            Controls.Add(label6);
-            Controls.Add(label5);
             Controls.Add(groupFatigue);
-            Controls.Add(lblStartYearCaption);
-            Controls.Add(numStartYear);
-            Controls.Add(numPlaysPerGame);
-            Controls.Add(numAutoBids);
+            Controls.Add(groupColors);
             Font = new Font("Microsoft Sans Serif", 9.75F);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "MainForm";
@@ -521,6 +651,20 @@ namespace NEXT_Tuning_App
             groupSpeedNerf.ResumeLayout(false);
             groupSpeedNerf.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)SpeedNerfAmount).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox2).EndInit();
+            groupOptOut.ResumeLayout(false);
+            groupOptOut.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numOptOutRating).EndInit();
+            groupStartYear.ResumeLayout(false);
+            groupSimGameLength.ResumeLayout(false);
+            groupSimGameLength.PerformLayout();
+            groupConfChamps.ResumeLayout(false);
+            groupConfChamps.PerformLayout();
+            groupBowlRankings.ResumeLayout(false);
+            groupBowlRankings.PerformLayout();
+            groupColors.ResumeLayout(false);
+            groupColors.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -533,8 +677,6 @@ namespace NEXT_Tuning_App
         private Label label3;
         private Label label2;
         private Label label1;
-        private Label label5;
-        private Label label6;
         private Button btnPickTeamTextColor;
         private Panel pnlTeamTextColorPreview;
         private Label lblTeamTextColorRaw;
@@ -555,5 +697,18 @@ namespace NEXT_Tuning_App
         private NumericUpDown SpeedNerfAmount;
         private CheckBox SpeedNerfBox;
         private Label label15;
+        private PictureBox pictureBox1;
+        private PictureBox pictureBox2;
+        private GroupBox groupOptOut;
+        private Label label16;
+        private NumericUpDown numOptOutRating;
+        private CheckBox OptOutBox;
+        private GroupBox groupStartYear;
+        private GroupBox groupSimGameLength;
+        private GroupBox groupConfChamps;
+        private GroupBox groupBowlRankings;
+        private CheckBox BowlRankingBox;
+        private GroupBox groupColors;
+        private Button btnLoad;
     }
 }
