@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security.Policy;
 
 namespace NEXT_Tuning_App
 {
@@ -9,8 +10,6 @@ namespace NEXT_Tuning_App
         //Load Default Values from File
         private void LoadValues()
         {
-
-
             // Starting Year (read from first offset)
             ushort year = ReadUInt16LE(originBase + StartYearOffsets[0]);
             numStartYear.Value = Math.Clamp((decimal)year, numStartYear.Minimum, numStartYear.Maximum);
@@ -107,84 +106,156 @@ namespace NEXT_Tuning_App
 
             lblMatchUpColorRaw.Text = $"RGB: {r2},{g2},{b2} (R:{r2:X2} G:{g2:X2} B:{b2:X2})";
 
+            /*
+            //Easy Kick
+            byte[] EasyKick = new byte[4];
+            for (int i = 0; i < EasyKickRevert.Length; i++)
+            {
+                EasyKick[i] = ReadByte(originBase + EasyKickOffset1 + i);
+            }
+            // Compare array contents instead of references
+            if (EasyKick.SequenceEqual(EasyKickUpdate))
+            {
+                EasyKickBox.Checked = true;
+            }
+            else
+            {
+                EasyKickBox.Checked = false;
+            }
+            */
+
+            //Kicking Slider 
+            float kickingSlider = ReadFloatHighWordOnly(originBase +KickingSliderOffset);
+            numKickSlider.Value = Convert.ToDecimal(kickingSlider);
         }
 
 
         //Load User Config File Data
         private void LoadConfig(List<decimal> config)
         {
-            // Starting Year (read from first offset)
-            numStartYear.Value = config[0];
-
-            //Plays Per Game Slider
-            numPlaysPerGame.Value = config[1];
-
-            //conf champs
-            numAutoBids.Value = config[2];
-
-            //Opt-Out
-            if (config[3] == 0)
+            for (int i = 0; i < config.Count; i++)
             {
-                OptOutBox.Checked = false;
-                numOptOutRating.Value = 45;
-                numOptOutRating.Enabled = false;
+
+                // Starting Year (read from first offset)
+                if (i == 0)
+                    numStartYear.Value = config[0];
+
+                //Plays Per Game Slider
+                else if (i == 1)
+                    numPlaysPerGame.Value = config[1];
+
+                //conf champs
+                else if (i == 2)
+                    numAutoBids.Value = config[2];
+
+                //Opt-Out
+                else if (i == 3)
+                {
+                    if (config[3] == 0)
+                    {
+                        OptOutBox.Checked = false;
+                        numOptOutRating.Value = 45;
+                        numOptOutRating.Enabled = false;
+                    }
+                    else
+                    {
+                        OptOutBox.Checked = true;
+                        numOptOutRating.Value = config[4];
+                        numOptOutRating.Enabled = true;
+                    }
+                }
+
+                //Bowls count in Rankings
+                else if (i == 5)
+                {
+                    if (config[5] == 0)
+                    {
+                        BowlRankingBox.Checked = false;
+                    }
+                    else
+                    {
+                        BowlRankingBox.Checked = true;
+                    }
+                }
+
+                //Speed Nerf Mod
+                else if (i == 6)
+                {
+                    if (config[6] == 0)
+                    {
+                        SpeedNerfBox.Checked = false;
+                        SpeedNerfAmount.Enabled = false;
+                    }
+                    else
+                    {
+                        SpeedNerfBox.Checked = true;
+                        SpeedNerfAmount.Value = config[7];
+                        SpeedNerfAmount.Enabled = true;
+                    }
+                }
+
+                //Fatigue Sliders
+                else if (i == 8)
+                {
+                    numFatigueJV.Value = config[8];
+                    numFatigueVarsity.Value = config[9];
+                    numFatigueAA.Value = config[10];
+                    numFatigueHeisman.Value = config[11];
+                }
+
+                //User Team Text Color
+                else if (i == 12)
+                {
+                    int r = Convert.ToInt32(config[12]);
+                    int g = Convert.ToInt32(config[13]);
+                    int b = Convert.ToInt32(config[14]);
+                    teamTextColor = System.Drawing.Color.FromArgb(r, g, b);
+                    pnlTeamTextColorPreview.BackColor = teamTextColor;
+                    lblTeamTextColorRaw.Text = $"RGB: {r},{g},{b} (R:{r:X2} G:{g:X2} B:{b:X2})";
+                }
+
+                else if (i == 15)
+                {
+                    //Matchup Text Color
+                    int r2 = Convert.ToInt32(config[15]);
+                    int g2 = Convert.ToInt32(config[16]);
+                    int b2 = Convert.ToInt32(config[17]);
+                    matchupTextColor = System.Drawing.Color.FromArgb(r2, g2, b2);
+                    pnlMatchUpColorPreview.BackColor = matchupTextColor;
+                    lblMatchUpColorRaw.Text = $"RGB: {r2},{g2},{b2} (R:{r2:X2} G:{g2:X2} B:{b2:X2})";
+                }
+
+                /*
+                //Easy Kick
+                else if (i == 18)
+                {
+                    if (config[18] == 0)
+                    {
+                        EasyKickBox.Checked = false;
+                        numEasyKick.Enabled = false;
+                    }
+                    else
+                    {
+                        EasyKickBox.Checked = true;
+                        numEasyKick.Value = config[19];
+                        numEasyKick.Enabled = true;
+                    }
+                }
+                */
+
+                //Kicking Slider
+                else if (i == 18)
+                {
+                    KickDiffComboBox.SelectedIndex = Convert.ToInt32(config[18]);
+                    numKickSlider.Value = config[19];
+                }
+
+
+
             }
-            else
-            {
-                OptOutBox.Checked = true;
-                numOptOutRating.Value = config[4];
-                numOptOutRating.Enabled = true;
-            }
-
-            //Bowls count in Rankings
-            if (config[5] == 0)
-            {
-                BowlRankingBox.Checked = false;
-            }
-            else
-            {
-                BowlRankingBox.Checked = true;
-            }
-
-
-            //Speed Nerf Mod
-            if (config[6] == 0)
-            {
-                SpeedNerfBox.Checked = false;
-                SpeedNerfAmount.Enabled = false;
-            }
-            else
-            {
-                SpeedNerfBox.Checked = true;
-                SpeedNerfAmount.Value = config[7];
-                SpeedNerfAmount.Enabled = true;
-            }
-
-            //Fatigue Sliders
-            numFatigueJV.Value = config[8];
-            numFatigueVarsity.Value = config[9];
-            numFatigueAA.Value = config[10];
-            numFatigueHeisman.Value = config[11];
-
-
-            //User Team Text Color
-            int r = Convert.ToInt32(config[12]);
-            int g = Convert.ToInt32(config[13]);
-            int b = Convert.ToInt32(config[14]);
-            teamTextColor = System.Drawing.Color.FromArgb(r, g, b);
-            pnlTeamTextColorPreview.BackColor = teamTextColor;
-            lblTeamTextColorRaw.Text = $"RGB: {r},{g},{b} (R:{r:X2} G:{g:X2} B:{b:X2})";
-
-            //Matchup Text Color
-            int r2 = Convert.ToInt32(config[15]);
-            int g2 = Convert.ToInt32(config[16]);
-            int b2 = Convert.ToInt32(config[17]);
-            matchupTextColor = System.Drawing.Color.FromArgb(r2, g2, b2);
-            pnlMatchUpColorPreview.BackColor = matchupTextColor;
-            lblMatchUpColorRaw.Text = $"RGB: {r2},{g2},{b2} (R:{r2:X2} G:{g2:X2} B:{b2:X2})";
-
-
-
         }
+
+
+
     }
 }

@@ -141,6 +141,46 @@ namespace NEXT_Tuning_App
             wText.WriteLine("MatchUp Text Color G:" + matchupTextColor.G);
             wText.WriteLine("MatchUp Text Color B:" + matchupTextColor.B);
 
+
+            /*
+            //Easy Kick Mod
+            if (EasyKickBox.Checked)
+            {
+                for (int i = 0; i < EasyKickUpdate.Length; i++)
+                {
+                    WriteByte(originBase + EasyKickOffset1 + i, EasyKickUpdate[i]);
+                }
+                for (int i = 0; i < EasyKickUpdate.Length; i++)
+                {
+                    WriteByte(originBase + EasyKickOffset2 + i, EasyKickUpdate[i]);
+                }
+
+                wText.WriteLine("Easy Kick:" + 1);
+                wText.WriteLine("Easy Kick Amount:" + numEasyKick.Value);
+            }
+            else
+            {
+                for (int i = 0; i < EasyKickUpdate.Length; i++)
+                {
+                    WriteByte(originBase + EasyKickOffset1 + i, EasyKickRevert[i]);
+                }
+                for (int i = 0; i < EasyKickUpdate.Length; i++)
+                {
+                    WriteByte(originBase + EasyKickOffset2 + i, EasyKickRevert[i]);
+                }
+
+                wText.WriteLine("Easy Kick:" + 0);
+                wText.WriteLine("Easy Kick Amount:" + 50);
+            }
+            */
+
+
+            WriteFloatHighWordOnly(originBase + KickingSliderOffset, (float)numKickSlider.Value);
+            wText.WriteLine("User Difficulty:" + KickDiffComboBox.SelectedIndex);
+            wText.WriteLine("Kicking Slider:" + numKickSlider.Value);
+
+
+
             //Clear Memory
             fs!.Flush();
 

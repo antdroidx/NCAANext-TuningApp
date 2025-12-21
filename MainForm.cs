@@ -53,14 +53,13 @@ namespace NEXT_Tuning_App
             btnSave.Enabled = enabled;
 
             groupStartYear.Enabled = enabled;
-            groupBowlRankings.Enabled = enabled;
             groupOptOut.Enabled = enabled;
             groupSimGameLength.Enabled = enabled;
             groupConfChamps.Enabled = enabled;
             groupFatigue.Enabled = enabled;
             groupSpeedNerf.Enabled = enabled;
             groupColors.Enabled = enabled;
-
+            groupKickMeter.Enabled = enabled;
         }
 
         //Open File
@@ -103,7 +102,7 @@ namespace NEXT_Tuning_App
                 string[] Line = sr.ReadLine().Split(':');
                 for (int column = 0; column < Line.Length; column++)
                 {
-                    if(Row == 0)
+                    if (Row == 0)
                     {
                         if (Line[0].Equals("User Configuration"))
                         {
@@ -171,7 +170,8 @@ namespace NEXT_Tuning_App
 
         #endregion
 
-        #region Dynamic Text Boxes
+        #region Dynamic Boxes
+
 
         private void numPlaysPerGame_ValueChanged(object sender, EventArgs e)
         {
@@ -223,6 +223,51 @@ namespace NEXT_Tuning_App
                 numOptOutRating.Enabled = false;
                 numOptOutRating.ReadOnly = true;
                 numOptOutRating.Value = 80;
+            }
+        }
+
+        private void EasyKickBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (EasyKickBox.Checked)
+            {
+                numEasyKick.Enabled = true;
+                numEasyKick.ReadOnly = false;
+                numEasyKick.Value = 50;
+            }
+            else
+            {
+                numEasyKick.Enabled = false;
+                numEasyKick.ReadOnly = true;
+            }
+
+        }
+
+        private void numEasyKick_ValueChanged(object sender, EventArgs e)
+        {
+            if (KickDiffComboBox.SelectedIndex >= 0)
+            {
+                double difficultyFactor = 8.33;
+                int difficulty = (int)KickDiffComboBox.SelectedIndex;
+
+                KickMeterValue.Text = Convert.ToString(Math.Round(Convert.ToDouble(numEasyKick.Value) - difficultyFactor * difficulty, 0));
+            }
+            else
+            {
+                MessageBox.Show("Please choose a user difficulty setting!");
+            }
+        }
+        private void KickDiffComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (KickDiffComboBox.SelectedIndex >= 0)
+            {
+                double difficultyFactor = 8.33;
+                int difficulty = (int)KickDiffComboBox.SelectedIndex;
+
+                KickMeterValue.Text = Convert.ToString(Math.Round(Convert.ToDouble(numEasyKick.Value) - difficultyFactor * difficulty, 0));
+            }
+            else
+            {
+                MessageBox.Show("Please set the kicking meter variable!");
             }
         }
 

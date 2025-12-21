@@ -62,8 +62,19 @@ namespace NEXT_Tuning_App
         private const int OptOutGamesOffset = 0x01F368;
 
         private const int BowlRankingSkipOffset = 0x38F3B4;
-        private static readonly byte[] BowlRankingSkipUpdate = { 0x00, 0x00, 0x00, 0x00 };
+        private static readonly byte[] BowlRankingSkipUpdate = { 0x00, 0x01, 0xB0, 0x7B };
         private static readonly byte[] BowlRankingSkipRevert = { 0xB6, 0x99, 0x04, 0x08 };
 
+        private const int EasyKickOffset1 = 0x2CB490;
+        private const int EasyKickOffset2 = 0x2D5E10;
+        private static readonly byte[] EasyKickUpdate = { 0x01, 0x00, 0x03, 0x24 };
+        private static readonly byte[] EasyKickRevert = { 0x2D, 0x18, 0x00, 0x00 };
+
+        private const int KickingSliderOffset = 0x2CB494;
+        private static readonly byte[] KickingSliderRevert = { 0x48, 0x42 };
+
+        /*  Defaults
+            Heisman --> 4248
+        */
     }
 }
