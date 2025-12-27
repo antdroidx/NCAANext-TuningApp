@@ -18,6 +18,8 @@ namespace NEXT_Tuning_App
         private FileStream? fs;
         private long originBase;
 
+        private bool DoNotTrigger = false;
+
         public MainForm()
         {
             InitializeComponent();
@@ -51,7 +53,6 @@ namespace NEXT_Tuning_App
         private void ToggleUI(bool enabled)
         {
             btnSave.Enabled = enabled;
-
             groupStartYear.Enabled = enabled;
             groupOptOut.Enabled = enabled;
             groupSimGameLength.Enabled = enabled;
@@ -60,6 +61,8 @@ namespace NEXT_Tuning_App
             groupSpeedNerf.Enabled = enabled;
             groupColors.Enabled = enabled;
             groupKickMeter.Enabled = enabled;
+            groupPolygon.Enabled = enabled;
+            groupImpactPlayer.Enabled = enabled;
         }
 
         //Open File
@@ -79,11 +82,13 @@ namespace NEXT_Tuning_App
                 return;
             }
 
+            DoNotTrigger = true;
             CheckVersion();
 
             lblFile.Text = $"{Path.GetFileName(ofd.FileName)} (SLUS @ 0x{originBase:X})";
             LoadValues();
             ToggleUI(true);
+            DoNotTrigger = false;
         }
 
 
@@ -106,7 +111,7 @@ namespace NEXT_Tuning_App
                     {
                         if (Line[0].Equals("User Configuration"))
                         {
-                            MessageBox.Show("Valid");
+                            //MessageBox.Show("Valid");
                         }
                         else
                         {
@@ -239,11 +244,12 @@ namespace NEXT_Tuning_App
                 numKickSlider.Enabled = false;
                 numKickSlider.ReadOnly = true;
             }
-
         }
 
         private void numEasyKick_ValueChanged(object sender, EventArgs e)
         {
+            if (DoNotTrigger) return;
+
             if (KickDiffComboBox.SelectedIndex >= 0)
             {
                 double difficultyFactor = 8.33;
@@ -262,7 +268,7 @@ namespace NEXT_Tuning_App
             {
                 double difficultyFactor = 8.33;
                 int difficulty = (int)KickDiffComboBox.SelectedIndex;
-
+                numKickSlider.Value = 50;
                 KickMeterValue.Text = Convert.ToString(Math.Round(Convert.ToDouble(numKickSlider.Value) - difficultyFactor * difficulty, 0));
             }
             else

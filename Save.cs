@@ -179,6 +179,46 @@ namespace NEXT_Tuning_App
             wText.WriteLine("User Difficulty:" + KickDiffComboBox.SelectedIndex);
             wText.WriteLine("Kicking Slider:" + numKickSlider.Value);
 
+                   
+            //Polygon Patch
+            if (PolygonBox.Checked)
+            {
+                for (int i = 0; i < PolygonUpdate1.Length; i++)
+                {
+                    WriteByte(originBase + PolygonOffset1 + i, PolygonUpdate1[i]);
+                }
+                for (int i = 0; i < PolygonUpdate2.Length; i++)
+                {
+                    WriteByte(originBase + PolygonOffset2 + i, PolygonUpdate2[i]);
+                }
+
+                wText.WriteLine("Polygon Patch:" + 1);
+            }
+            else
+            {
+                for (int i = 0; i < PolygonRevert1.Length; i++)
+                {
+                    WriteByte(originBase + PolygonOffset1 + i, PolygonRevert1[i]);
+                }
+                for (int i = 0; i < PolygonRevert2.Length; i++)
+                {
+                    WriteByte(originBase + PolygonOffset2 + i, PolygonRevert2[i]);
+                }
+
+                wText.WriteLine("Polygon Patch:" + 0);
+            }
+
+            //Impact Player
+            if (ImpactPlayerBox.Checked)
+            {
+                WriteByte(originBase + ImpactPlayerOffset, ImpactPlayersRevert);
+                wText.WriteLine("Impact Players:" + 1);
+            }
+            else
+            {
+                WriteByte(originBase + ImpactPlayerOffset, ImpactPlayersUpdate);
+                wText.WriteLine("Impact Players:" + 0);
+            }
 
 
             //Clear Memory

@@ -73,8 +73,18 @@ namespace NEXT_Tuning_App
         private const int KickingSliderOffset = 0x2CB494;
         private static readonly byte[] KickingSliderRevert = { 0x48, 0x42 };
 
-        /*  Defaults
-            Heisman --> 4248
-        */
+        private const int PolygonOffset1 = 0x40C29C;
+        private const int PolygonOffset2 = 0x40EB90;
+
+        private static readonly byte[] PolygonUpdate1 = { 0x2D, 0x90, 0x00, 0x00 };
+        private static readonly byte[] PolygonUpdate2 = { 0x2D, 0x10, 0x00, 0x00 };
+        private static readonly byte[] PolygonRevert1 = { 0xF8, 0x0E, 0x32, 0x8E }; 
+        private static readonly byte[] PolygonRevert2 = { 0x00, 0x11, 0x02, 0x00 };
+
+
+        private const int ImpactPlayerOffset = 0x59FF50;
+        private static readonly byte ImpactPlayersUpdate = 0x00;
+        private static readonly byte ImpactPlayersRevert = 0x9F;
+
     }
 }

@@ -127,6 +127,34 @@ namespace NEXT_Tuning_App
             //Kicking Slider 
             float kickingSlider = ReadFloatHighWordOnly(originBase +KickingSliderOffset);
             numKickSlider.Value = Convert.ToDecimal(kickingSlider);
+
+            //Polygon Patch
+            byte[] Polygon = new byte[4];
+            for (int i = 0; i < PolygonRevert1.Length; i++)
+            {
+                Polygon[i] = ReadByte(originBase + PolygonOffset1 + i);
+            }
+            // Compare array contents instead of references
+            if (Polygon.SequenceEqual(PolygonUpdate1))
+            {
+                PolygonBox.Checked = true;
+            }
+            else
+            {
+                PolygonBox.Checked = false;
+            }
+
+            //Impact Players
+            byte impact = ReadByte(originBase + ImpactPlayerOffset);
+            if(impact == ImpactPlayersUpdate)
+            {
+                ImpactPlayerBox.Checked = false;
+            }
+            else
+            {
+                ImpactPlayerBox.Checked = true;
+            }
+
         }
 
 
@@ -250,7 +278,31 @@ namespace NEXT_Tuning_App
                     numKickSlider.Value = config[19];
                 }
 
+                //Polygon Patch
+                else if (i == 20)
+                {
+                    if (config[20] == 0)
+                    {
+                        PolygonBox.Checked = false;
+                    }
+                    else
+                    {
+                        PolygonBox.Checked = true;
+                    }
+                }
 
+                //Impact Players
+                else if (i == 21)
+                {
+                    if (config[21] == 0)
+                    {
+                        ImpactPlayerBox.Checked = false;
+                    }
+                    else
+                    {
+                        ImpactPlayerBox.Checked = true;
+                    }
+                }
 
             }
         }
