@@ -16,6 +16,14 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="NextTuningApp.Core\**\*.cs" />
+    <Compile Remove="NextTuningApp.Maui\**\*.cs" />
+    <EmbeddedResource Remove="NextTuningApp.Core\**\*.resx" />
+    <EmbeddedResource Remove="NextTuningApp.Maui\**\*.resx" />
+    <None Remove="NextTuningApp.Core\**\*" />
+    <None Remove="NextTuningApp.Maui\**\*" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Update="Load.cs" />
     <Compile Update="ReadWrite.cs">
       <SubType>Form</SubType>
