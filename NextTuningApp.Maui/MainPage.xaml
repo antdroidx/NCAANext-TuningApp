@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="NextTuningApp.Maui.MainPage"
+             Title="NCAA Next Tuning App">
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+            <Label Text="NCAA Next Tuning App" FontSize="24" FontAttributes="Bold" />
+            <Label Text="Cross-platform MAUI edition" FontSize="14" TextColor="Gray" />
+
+            <Label Text="Status" FontAttributes="Bold" />
+            <Label Text="{Binding StatusMessage}" LineBreakMode="WordWrap" />
+
+            <HorizontalStackLayout Spacing="12">
+                <Button Text="Open ISO/SLUS" Command="{Binding OpenFileCommand}" />
+                <Button Text="Load Config" Command="{Binding LoadConfigCommand}" IsEnabled="{Binding IsFileLoaded}" />
+                <Button Text="Save Changes" Command="{Binding SaveCommand}" IsEnabled="{Binding IsFileLoaded}" />
+            </HorizontalStackLayout>
+
+            <Label Text="File" FontAttributes="Bold" />
+            <Label Text="{Binding FileDisplay}" LineBreakMode="CharacterWrap" />
+
+            <Frame BorderColor="#CCCCCC" CornerRadius="8" Padding="12" IsEnabled="{Binding IsFileLoaded}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Dynasty Start Year" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Stepper Minimum="1900" Maximum="2099" Increment="1" Value="{Binding StartYear}" />
+                        <Label Text="{Binding StartYear}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <Label Text="Sim Plays Per Game" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Stepper Minimum="80" Maximum="120" Increment="1" Value="{Binding PlaysPerGame}" />
+                        <Label Text="{Binding PlaysPerGame}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <Label Text="Conference Champ Auto Bids" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Stepper Minimum="0" Maximum="12" Increment="1" Value="{Binding AutoBids}" />
+                        <Label Text="{Binding AutoBids}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="#CCCCCC" CornerRadius="8" Padding="12" IsEnabled="{Binding IsFileLoaded}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Bowl Opt-Outs" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Enable Opt-Outs" VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding OptOutEnabled}" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Minimum Rating" VerticalOptions="Center" />
+                        <Stepper Minimum="40" Maximum="99" Increment="1" Value="{Binding OptOutRating}" IsEnabled="{Binding OptOutEnabled}" />
+                        <Label Text="{Binding OptOutRating}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Bowl Rankings Affect Poll" VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding BowlRankingEnabled}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="#CCCCCC" CornerRadius="8" Padding="12" IsEnabled="{Binding IsFileLoaded}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Speed Nerf" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Enable Speed Nerf" VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding SpeedNerfEnabled}" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Speed Nerf %" VerticalOptions="Center" />
+                        <Stepper Minimum="0" Maximum="100" Increment="1" Value="{Binding SpeedNerfPercent}" IsEnabled="{Binding SpeedNerfEnabled}" />
+                        <Label Text="{Binding SpeedNerfPercent}" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="#CCCCCC" CornerRadius="8" Padding="12" IsEnabled="{Binding IsFileLoaded}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Fatigue" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="8">
+                        <Label Text="JV" Grid.Row="0" Grid.Column="0" VerticalOptions="Center" />
+                        <Entry Text="{Binding FatigueJuniorVarsity}" Grid.Row="0" Grid.Column="1" Keyboard="Numeric" />
+                        <Label Text="Varsity" Grid.Row="1" Grid.Column="0" VerticalOptions="Center" />
+                        <Entry Text="{Binding FatigueVarsity}" Grid.Row="1" Grid.Column="1" Keyboard="Numeric" />
+                        <Label Text="All-American" Grid.Row="2" Grid.Column="0" VerticalOptions="Center" />
+                        <Entry Text="{Binding FatigueAllAmerican}" Grid.Row="2" Grid.Column="1" Keyboard="Numeric" />
+                        <Label Text="Heisman" Grid.Row="3" Grid.Column="0" VerticalOptions="Center" />
+                        <Entry Text="{Binding FatigueHeisman}" Grid.Row="3" Grid.Column="1" Keyboard="Numeric" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="#CCCCCC" CornerRadius="8" Padding="12" IsEnabled="{Binding IsFileLoaded}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Kicking" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Kicking Slider" VerticalOptions="Center" />
+                        <Entry Text="{Binding KickingSlider}" Keyboard="Numeric" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="#CCCCCC" CornerRadius="8" Padding="12" IsEnabled="{Binding IsFileLoaded}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Text Colors" FontAttributes="Bold" />
+
+                    <Label Text="User Team Highlight" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                        <Entry Text="{Binding UserTeamTextR}" Keyboard="Numeric" WidthRequest="60" />
+                        <Entry Text="{Binding UserTeamTextG}" Keyboard="Numeric" WidthRequest="60" Grid.Column="1" />
+                        <Entry Text="{Binding UserTeamTextB}" Keyboard="Numeric" WidthRequest="60" Grid.Column="2" />
+                        <BoxView Color="{Binding UserTeamPreviewColor}" WidthRequest="40" HeightRequest="20" Grid.Column="3" />
+                    </Grid>
+                    <Label Text="{Binding UserTeamTextColorDisplay}" FontSize="12" TextColor="Gray" />
+
+                    <Label Text="Matchup Highlight" FontAttributes="Bold" />
+                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                        <Entry Text="{Binding MatchupTextR}" Keyboard="Numeric" WidthRequest="60" />
+                        <Entry Text="{Binding MatchupTextG}" Keyboard="Numeric" WidthRequest="60" Grid.Column="1" />
+                        <Entry Text="{Binding MatchupTextB}" Keyboard="Numeric" WidthRequest="60" Grid.Column="2" />
+                        <BoxView Color="{Binding MatchupPreviewColor}" WidthRequest="40" HeightRequest="20" Grid.Column="3" />
+                    </Grid>
+                    <Label Text="{Binding MatchupTextColorDisplay}" FontSize="12" TextColor="Gray" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame BorderColor="#CCCCCC" CornerRadius="8" Padding="12" IsEnabled="{Binding IsFileLoaded}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Other Tweaks" FontAttributes="Bold" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Polygon Patch" VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding PolygonPatchEnabled}" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="12">
+                        <Label Text="Impact Players" VerticalOptions="Center" />
+                        <Switch IsToggled="{Binding ImpactPlayersEnabled}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

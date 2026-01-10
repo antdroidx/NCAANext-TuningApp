@@ -5,6 +5,10 @@ VisualStudioVersion = 17.14.36717.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NCAA-NEXT-Tuning-App", "NCAA-NEXT-Tuning-App.csproj", "{7D394292-1483-29D5-D362-4F0CBC46C385}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextTuningApp.Core", "NextTuningApp.Core\\NextTuningApp.Core.csproj", "{A8F733BB-C9E2-420D-8E1A-3B2A79F4D8AE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextTuningApp.Maui", "NextTuningApp.Maui\\NextTuningApp.Maui.csproj", "{13381D3E-9700-4C3B-9051-8013EDE158FB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{7D394292-1483-29D5-D362-4F0CBC46C385}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D394292-1483-29D5-D362-4F0CBC46C385}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D394292-1483-29D5-D362-4F0CBC46C385}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8F733BB-C9E2-420D-8E1A-3B2A79F4D8AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8F733BB-C9E2-420D-8E1A-3B2A79F4D8AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8F733BB-C9E2-420D-8E1A-3B2A79F4D8AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8F733BB-C9E2-420D-8E1A-3B2A79F4D8AE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13381D3E-9700-4C3B-9051-8013EDE158FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13381D3E-9700-4C3B-9051-8013EDE158FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13381D3E-9700-4C3B-9051-8013EDE158FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13381D3E-9700-4C3B-9051-8013EDE158FB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
