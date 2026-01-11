@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36717.8
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NCAA-NEXT-Tuning-App", "NCAA-NEXT-Tuning-App.csproj", "{7D394292-1483-29D5-D362-4F0CBC46C385}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NCAA-NEXT-Tuning-App", "NCAA-NEXT-Tuning-App.csproj", "{7D394292-1483-29D5-D362-4F0CBC46C385}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextTuningApp.Core", "NextTuningApp.Core\\NextTuningApp.Core.csproj", "{A8F733BB-C9E2-420D-8E1A-3B2A79F4D8AE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NextTuningApp.Core", "NextTuningApp.Core\\NextTuningApp.Core.csproj", "{A8F733BB-C9E2-420D-8E1A-3B2A79F4D8AE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NextTuningApp.Maui", "NextTuningApp.Maui\\NextTuningApp.Maui.csproj", "{13381D3E-9700-4C3B-9051-8013EDE158FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NextTuningApp.Maui", "NextTuningApp.Maui\\NextTuningApp.Maui.csproj", "{13381D3E-9700-4C3B-9051-8013EDE158FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
