@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.Maui">
-  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0-windows10.0.19041.0</TargetFrameworks>
+    <IncludeMobileTargets>false</IncludeMobileTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(IncludeMobileTargets)' == 'true' and '$(OS)' == 'Windows_NT'">
     <TargetFrameworks>net8.0-android;net8.0-windows10.0.19041.0</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
+  <PropertyGroup Condition="'$(IncludeMobileTargets)' == 'true' and '$(OS)' != 'Windows_NT'">
     <TargetFrameworks>net8.0-android;net8.0-maccatalyst;net8.0-windows10.0.19041.0</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
