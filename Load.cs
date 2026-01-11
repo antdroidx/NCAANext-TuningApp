@@ -7,6 +7,7 @@ namespace NEXT_Tuning_App
     public partial class MainForm : Form
     {
 
+        #region Load Values
         //Load Default Values from File
         private void LoadValues()
         {
@@ -155,8 +156,63 @@ namespace NEXT_Tuning_App
                 ImpactPlayerBox.Checked = true;
             }
 
+            //Impact Menu Setting
+            byte[] loadedImpactSetting = new byte[64];
+            for (int i = 0; i < loadedImpactSetting.Length; i++)
+            {
+                loadedImpactSetting[i] = ReadByte(originBase + TPIOSettingOffset + i);
+            }
+            if(loadedImpactSetting.SequenceEqual(impactMenuDefault))
+            {
+                ImpactMenuSettingBox.SelectedIndex = 0;
+            }
+            else if (loadedImpactSetting.SequenceEqual(impactMenuSetting1))
+            {
+                ImpactMenuSettingBox.SelectedIndex = 1;
+            }
+            else if (loadedImpactSetting.SequenceEqual(impactMenuSetting2))
+            {
+                ImpactMenuSettingBox.SelectedIndex = 2;
+            }
+            else if (loadedImpactSetting.SequenceEqual(impactMenuSetting3))
+            {
+                ImpactMenuSettingBox.SelectedIndex = 3;
+            }
+            else if (loadedImpactSetting.SequenceEqual(impactMenuSetting4))
+            {
+                ImpactMenuSettingBox.SelectedIndex = 4;
+            }
+            else
+            {
+                ImpactMenuSettingBox.SelectedIndex = 0;
+            }
+
+
+            //Sim Stats
+            byte[] simPass = new byte[2];
+            for (int i = 0; i < simPass.Length; i++)
+            {
+                simPass[i] = ReadByte(originBase + SimPassYdsOffset + i);
+            }
+            numSimPassYds.Value = BitConverter.ToInt16(simPass);
+
+            byte[] simRush = new byte[2];
+            for (int i = 0; i < simPass.Length; i++)
+            {
+                simRush[i] = ReadByte(originBase + SimRushYdsOffset + i);
+            }
+            numSimRushYds.Value = BitConverter.ToInt16(simRush);
+
+            //Scholarships
+            byte scholarships = ReadByte(originBase + ScholarshipOffset1);
+            numScholarships.Value = scholarships;
         }
 
+        #endregion
+
+
+
+        #region Load Config File
 
         //Load User Config File Data
         private void LoadConfig(List<decimal> config)
@@ -304,10 +360,29 @@ namespace NEXT_Tuning_App
                     }
                 }
 
+                else if (i == 22)
+                {
+                    ImpactMenuSettingBox.SelectedIndex = Convert.ToInt32(config[22]);
+                }
+
+                //Sim Stats
+                else if (i == 23)
+                {
+                    numSimPassYds.Value = config[23];
+                    numSimRushYds.Value = config[24];
+                }
+
+                //Scholarships
+                else if (i == 25)
+                {
+                    numScholarships.Value = config[25];
+                }
+
+
             }
         }
 
-
+        #endregion
 
     }
 }

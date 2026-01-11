@@ -20,6 +20,8 @@ namespace NEXT_Tuning_App
 
         private bool DoNotTrigger = false;
 
+        private double currentVersion = 16.5;
+
         public MainForm()
         {
             InitializeComponent();
@@ -29,7 +31,6 @@ namespace NEXT_Tuning_App
         //Version Check
         private void CheckVersion()
         {
-            double currentVersion = 16.4;
             string x = "";
             for (int i = 0; i < 4; i++)
             {
@@ -38,7 +39,7 @@ namespace NEXT_Tuning_App
             }
 
 
-            if (Convert.ToDouble(x) >= 16.4)
+            if (Convert.ToDouble(x) >= currentVersion)
             {
                 //MessageBox.Show("Correct Version Loaded");
             }
@@ -55,7 +56,7 @@ namespace NEXT_Tuning_App
             btnSave.Enabled = enabled;
             groupStartYear.Enabled = enabled;
             groupOptOut.Enabled = enabled;
-            groupSimGameLength.Enabled = enabled;
+            groupSimEngine.Enabled = enabled;
             groupConfChamps.Enabled = enabled;
             groupFatigue.Enabled = enabled;
             groupSpeedNerf.Enabled = enabled;
@@ -63,6 +64,7 @@ namespace NEXT_Tuning_App
             groupKickMeter.Enabled = enabled;
             groupPolygon.Enabled = enabled;
             groupImpactPlayer.Enabled = enabled;
+            groupRecruiting.Enabled = enabled;
         }
 
         //Open File

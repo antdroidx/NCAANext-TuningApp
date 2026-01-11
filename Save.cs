@@ -220,6 +220,88 @@ namespace NEXT_Tuning_App
                 wText.WriteLine("Impact Players:" + 0);
             }
 
+            //Impact Menu Setting
+            if(ImpactMenuSettingBox.SelectedIndex == 0)
+            {
+                for (int i = 0; i < impactMenuDefault.Length; i++)
+                {
+                    WriteByte(originBase + TPIOSettingOffset + i, impactMenuDefault[i]);
+                }
+                wText.WriteLine("Impact Menu Setting:" + 0);
+            }
+            else if (ImpactMenuSettingBox.SelectedIndex == 1)
+            {
+                for (int i = 0; i < impactMenuSetting1.Length; i++)
+                {
+                    WriteByte(originBase + TPIOSettingOffset + i, impactMenuSetting1[i]);
+                }
+                wText.WriteLine("Impact Menu Setting:" + 1);
+            }
+            else if (ImpactMenuSettingBox.SelectedIndex == 2)
+            {
+                for (int i = 0; i < impactMenuSetting2.Length; i++)
+                {
+                    WriteByte(originBase + TPIOSettingOffset + i, impactMenuSetting2[i]);
+                }
+                wText.WriteLine("Impact Menu Setting:" + 2);
+            }
+            else if (ImpactMenuSettingBox.SelectedIndex == 3)
+            {
+                for (int i = 0; i < impactMenuSetting3.Length; i++)
+                {
+                    WriteByte(originBase + TPIOSettingOffset + i, impactMenuSetting3[i]);
+                }
+                wText.WriteLine("Impact Menu Setting:" + 3);
+            }
+            else if (ImpactMenuSettingBox.SelectedIndex == 4)
+            {
+                for (int i = 0; i < impactMenuSetting4.Length; i++)
+                {
+                    WriteByte(originBase + TPIOSettingOffset + i, impactMenuSetting4[i]);
+                }
+                wText.WriteLine("Impact Menu Setting:" + 4);
+            }
+            else
+            {
+                for (int i = 0; i < impactMenuDefault.Length; i++)
+                {
+                    WriteByte(originBase + TPIOSettingOffset + i, impactMenuDefault[i]);
+                }
+                wText.WriteLine("Impact Menu Setting:" + 0);
+            }
+
+            //Sim Stats
+            if (numSimPassYds.Value >= 0)
+            {
+                WriteByte(originBase + SimPassYdsOffset, (byte)numSimPassYds.Value);
+                WriteByte(originBase + SimPassYdsOffset + 1, 0x00);
+            }
+            else
+            {
+                WriteByte(originBase + SimPassYdsOffset, 0xFF);
+                WriteByte(originBase + SimPassYdsOffset + 1, 0xFF);
+            }
+            wText.WriteLine("Sim Pass Yards:" + numSimPassYds.Value);
+
+            if (numSimRushYds.Value >= 0)
+            {
+                WriteByte(originBase + SimRushYdsOffset, (byte)numSimRushYds.Value);
+                WriteByte(originBase + SimRushYdsOffset + 1, 0x00);
+            }
+            else
+            {
+                WriteByte(originBase + SimRushYdsOffset, 0xFF);
+                WriteByte(originBase + SimRushYdsOffset + 1, 0xFF);
+            }
+            wText.WriteLine("Sim Rush Yards:" + numSimRushYds.Value);
+
+            //Scholarships
+            WriteByte(originBase + ScholarshipOffset1, (byte)numScholarships.Value);
+            WriteByte(originBase + ScholarshipOffset2, (byte)numScholarships.Value);
+            WriteByte(originBase + ScholarshipOffset3, (byte)numScholarships.Value);
+            WriteByte(originBase + ScholarshipOffset4, (byte)numScholarships.Value);
+            WriteByte(originBase + ScholarshipOffset5, (byte)numScholarships.Value);
+            wText.WriteLine("Scholarships:" + numScholarships.Value);
 
             //Clear Memory
             fs!.Flush();
