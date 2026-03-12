@@ -8,6 +8,14 @@ namespace NEXT_Tuning_App
         //Save Data
         private void btnSave_Click(object sender, EventArgs e)
         {
+            /*
+            if (KickDiffComboBox.SelectedIndex < 0)
+            {
+                MessageBox.Show("Please set the Kick Meter Slider Option before saving!");
+                return;
+            }
+            */
+
             Stream myStream = File.Create("user-config.cfg");
             StreamWriter wText = new StreamWriter(myStream);
             //StringBuilder hbuilder = new StringBuilder();
@@ -30,7 +38,7 @@ namespace NEXT_Tuning_App
 
 
             //Save Plays Per Game Sim
-            WriteByte(originBase + PlaysPerGameOffset, (byte)numPlaysPerGame.Value);
+            WriteByte(originBase + PlaysPerGameOffset, (byte)ConvertSimPlaysPerGame());
             wText.WriteLine("Sim Plays:" + numPlaysPerGame.Value);
 
 
@@ -65,7 +73,10 @@ namespace NEXT_Tuning_App
                 {
                     WriteByte(originBase + BowlRankingSkipOffset + i, BowlRankingSkipUpdate[i]);
                 }
-
+                for (int i = 0; i < BowlRankingSkipUpdate2.Length; i++)
+                {
+                    WriteByte(originBase + BowlRankingSkipOffset2 + i, BowlRankingSkipUpdate2[i]);
+                }
                 wText.WriteLine("Bowl Ranking:" + 1);
             }
             else
@@ -73,6 +84,10 @@ namespace NEXT_Tuning_App
                 for (int i = 0; i < BowlRankingSkipRevert.Length; i++)
                 {
                     WriteByte(originBase + BowlRankingSkipOffset + i, BowlRankingSkipRevert[i]);
+                }
+                for (int i = 0; i < BowlRankingSkipRevert2.Length; i++)
+                {
+                    WriteByte(originBase + BowlRankingSkipOffset2 + i, BowlRankingSkipRevert2[i]);
                 }
                 wText.WriteLine("Bowl Ranking:" + 0);
 
@@ -141,45 +156,30 @@ namespace NEXT_Tuning_App
             wText.WriteLine("MatchUp Text Color G:" + matchupTextColor.G);
             wText.WriteLine("MatchUp Text Color B:" + matchupTextColor.B);
 
-
-            /*
-            //Easy Kick Mod
-            if (EasyKickBox.Checked)
+            //Kicking Slider
+            if(EnableKickSliderBox.Checked)
             {
-                for (int i = 0; i < EasyKickUpdate.Length; i++)
+                for (int i = 0; i < KickingSliderEnable.Length; i++)
                 {
-                    WriteByte(originBase + EasyKickOffset1 + i, EasyKickUpdate[i]);
+                    WriteByte(originBase + KickingSliderEnableOffset + i, KickingSliderEnable[i]);
                 }
-                for (int i = 0; i < EasyKickUpdate.Length; i++)
-                {
-                    WriteByte(originBase + EasyKickOffset2 + i, EasyKickUpdate[i]);
-                }
+                wText.WriteLine("Kicking Slider Enabled:" + 1);
 
-                wText.WriteLine("Easy Kick:" + 1);
-                wText.WriteLine("Easy Kick Amount:" + numEasyKick.Value);
+                WriteFloatHighWordOnly(originBase + KickingSliderOffset, kickMeterBar.Value);
+                wText.WriteLine("Kicking Slider:" + kickMeterBar.Value);
             }
             else
             {
-                for (int i = 0; i < EasyKickUpdate.Length; i++)
+                for (int i = 0; i < KickingSliderDisable.Length; i++)
                 {
-                    WriteByte(originBase + EasyKickOffset1 + i, EasyKickRevert[i]);
+                    WriteByte(originBase + KickingSliderEnableOffset + i, KickingSliderDisable[i]);
                 }
-                for (int i = 0; i < EasyKickUpdate.Length; i++)
-                {
-                    WriteByte(originBase + EasyKickOffset2 + i, EasyKickRevert[i]);
-                }
-
-                wText.WriteLine("Easy Kick:" + 0);
-                wText.WriteLine("Easy Kick Amount:" + 50);
+                wText.WriteLine("Kicking Slider Enabled:" + 0);
+                wText.WriteLine("Kicking Slider:" + 50);
             }
-            */
 
 
-            WriteFloatHighWordOnly(originBase + KickingSliderOffset, (float)numKickSlider.Value);
-            wText.WriteLine("User Difficulty:" + KickDiffComboBox.SelectedIndex);
-            wText.WriteLine("Kicking Slider:" + numKickSlider.Value);
 
-                   
             //Polygon Patch
             if (PolygonBox.Checked)
             {
@@ -302,6 +302,26 @@ namespace NEXT_Tuning_App
             WriteByte(originBase + ScholarshipOffset4, (byte)numScholarships.Value);
             WriteByte(originBase + ScholarshipOffset5, (byte)numScholarships.Value);
             wText.WriteLine("Scholarships:" + numScholarships.Value);
+
+            //Auto Kicking
+            if (EnableAutoKick.Checked)
+            {
+                for (int i = 0; i < AutoKickUpdate.Length; i++)
+                {
+                    WriteByte(originBase + AutoKickOffset + i, AutoKickUpdate[i]);
+                }
+                wText.WriteLine("Auto Kicking:" + 1);
+            }
+            else
+            {
+                for (int i = 0; i < AutoKickRevert.Length; i++)
+                {
+                    WriteByte(originBase + AutoKickOffset + i, AutoKickRevert[i]);
+                }
+                wText.WriteLine("Auto Kicking:" + 0);
+            }
+
+
 
             //Clear Memory
             fs!.Flush();

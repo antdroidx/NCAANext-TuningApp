@@ -62,16 +62,23 @@ namespace NEXT_Tuning_App
         private const int OptOutGamesOffset = 0x01F368;
 
         private const int BowlRankingSkipOffset = 0x38F3B4;
+        private const int BowlRankingSkipOffset2 = 0x38E5C4;
         private static readonly byte[] BowlRankingSkipUpdate = { 0x00, 0x01, 0xB0, 0x7B };
         private static readonly byte[] BowlRankingSkipRevert = { 0xB6, 0x99, 0x04, 0x08 };
+        private static readonly byte[] BowlRankingSkipUpdate2 = { 0x00, 0x00, 0x00, 0x00 };
+        private static readonly byte[] BowlRankingSkipRevert2 = { 0x05, 0x00, 0x50, 0x14 };
 
         private const int EasyKickOffset1 = 0x2CB490;
         private const int EasyKickOffset2 = 0x2D5E10;
         private static readonly byte[] EasyKickUpdate = { 0x01, 0x00, 0x03, 0x24 };
         private static readonly byte[] EasyKickRevert = { 0x2D, 0x18, 0x00, 0x00 };
 
+        private const int KickingSliderEnableOffset = 0x2CB490;
+        private static readonly byte[] KickingSliderDisable = { 0x2D, 0x18, 0x00, 0x00, 0x48, 0x42, 0x01, 0x3C };
+        private static readonly byte[] KickingSliderEnable = { 0x01, 0x00, 0x03, 0x24, 0x48, 0x42, 0x01, 0x3C };
         private const int KickingSliderOffset = 0x2CB494;
         private static readonly byte[] KickingSliderRevert = { 0x48, 0x42 };
+
 
         private const int PolygonOffset1 = 0x40C29C;
         private const int PolygonOffset2 = 0x40EB90;
@@ -135,5 +142,9 @@ namespace NEXT_Tuning_App
         private const int ScholarshipOffset4 = 0x3701B8;
         private const int ScholarshipOffset5 = 0x5BF028;
 
+        private const int AutoKickOffset = 0x2D50B8;
+
+        private static readonly byte[] AutoKickUpdate = { 0xFF, 0x00, 0x04, 0x24, 0x05, 0x00, 0x00, 0x10, 0x07, 0x00, 0x64, 0xA0 };
+        private static readonly byte[] AutoKickRevert = { 0xFF, 0x00, 0x03, 0x24, 0x05, 0x00, 0x43, 0x10, 0x00, 0x00, 0x00, 0x00 };
     }
 }

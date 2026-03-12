@@ -17,7 +17,8 @@ namespace NEXT_Tuning_App
 
             //Plays Per Game Slider
             byte plays = ReadByte(originBase + PlaysPerGameOffset);
-            numPlaysPerGame.Value = Math.Clamp(plays, (byte)80, (byte)120);
+            //numPlaysPerGame.Value = Math.Clamp(plays, (byte)80, (byte)120);
+            numPlaysPerGame.Value = ConvertSimPlaysPerGameByteToInt(plays);
 
             //conf champ bids
             byte autoBids = ReadByte(originBase + AutoBidOffset);
@@ -107,27 +108,28 @@ namespace NEXT_Tuning_App
 
             lblMatchUpColorRaw.Text = $"RGB: {r2},{g2},{b2} (R:{r2:X2} G:{g2:X2} B:{b2:X2})";
 
-            /*
-            //Easy Kick
-            byte[] EasyKick = new byte[4];
-            for (int i = 0; i < EasyKickRevert.Length; i++)
+            //Kicking Slider 
+            byte kickSliderEnabled = ReadByte(originBase + KickingSliderEnableOffset);
+            if (kickSliderEnabled == KickingSliderEnable[0])
             {
-                EasyKick[i] = ReadByte(originBase + EasyKickOffset1 + i);
-            }
-            // Compare array contents instead of references
-            if (EasyKick.SequenceEqual(EasyKickUpdate))
-            {
-                EasyKickBox.Checked = true;
+                EnableKickSliderBox.Checked = true;
+                float kickingSlider = ReadFloatHighWordOnly(originBase + KickingSliderOffset);
+                kickMeterBar.Value = Convert.ToInt32(kickingSlider);
+                kickMeterBox.Text = "" + kickMeterBar.Value;
+
+                kickMeterBar.Enabled = true;
+                kickMeterBox.Enabled = true;
             }
             else
             {
-                EasyKickBox.Checked = false;
-            }
-            */
+                EnableKickSliderBox.Checked = false;
+                kickMeterBar.Value = 50;
+                kickMeterBox.Text = "" + kickMeterBar.Value;
 
-            //Kicking Slider 
-            float kickingSlider = ReadFloatHighWordOnly(originBase +KickingSliderOffset);
-            numKickSlider.Value = Convert.ToDecimal(kickingSlider);
+                kickMeterBar.Enabled = false;
+                kickMeterBox.Enabled = false;
+            }
+
 
             //Polygon Patch
             byte[] Polygon = new byte[4];
@@ -147,7 +149,7 @@ namespace NEXT_Tuning_App
 
             //Impact Players
             byte impact = ReadByte(originBase + ImpactPlayerOffset);
-            if(impact == ImpactPlayersUpdate)
+            if (impact == ImpactPlayersUpdate)
             {
                 ImpactPlayerBox.Checked = false;
             }
@@ -162,7 +164,7 @@ namespace NEXT_Tuning_App
             {
                 loadedImpactSetting[i] = ReadByte(originBase + TPIOSettingOffset + i);
             }
-            if(loadedImpactSetting.SequenceEqual(impactMenuDefault))
+            if (loadedImpactSetting.SequenceEqual(impactMenuDefault))
             {
                 ImpactMenuSettingBox.SelectedIndex = 0;
             }
@@ -206,7 +208,23 @@ namespace NEXT_Tuning_App
             //Scholarships
             byte scholarships = ReadByte(originBase + ScholarshipOffset1);
             numScholarships.Value = scholarships;
+
+            //Auto Kicking
+            byte[] autoKick = new byte[12];
+            for (int i = 0; i < autoKick.Length; i++)
+            {
+                autoKick[i] = ReadByte(originBase + AutoKickOffset + i);
+            }
+            if (autoKick.SequenceEqual(AutoKickUpdate))
+            {
+                EnableAutoKick.Checked = true;
+            }
+            else
+            {
+                EnableAutoKick.Checked = false;
+            }
         }
+
 
         #endregion
 
@@ -309,29 +327,26 @@ namespace NEXT_Tuning_App
                     lblMatchUpColorRaw.Text = $"RGB: {r2},{g2},{b2} (R:{r2:X2} G:{g2:X2} B:{b2:X2})";
                 }
 
-                /*
-                //Easy Kick
-                else if (i == 18)
-                {
-                    if (config[18] == 0)
-                    {
-                        EasyKickBox.Checked = false;
-                        numEasyKick.Enabled = false;
-                    }
-                    else
-                    {
-                        EasyKickBox.Checked = true;
-                        numEasyKick.Value = config[19];
-                        numEasyKick.Enabled = true;
-                    }
-                }
-                */
-
                 //Kicking Slider
                 else if (i == 18)
                 {
-                    KickDiffComboBox.SelectedIndex = Convert.ToInt32(config[18]);
-                    numKickSlider.Value = config[19];
+                    if (config[18] == 1)
+                    {
+                        EnableKickSliderBox.Checked = true;
+
+                        kickMeterBar.Enabled = true;
+                        kickMeterBox.Enabled = true;
+                    }
+                    else
+                    {
+                        EnableKickSliderBox.Checked = false;
+
+                        kickMeterBar.Enabled = false;
+                        kickMeterBox.Enabled = false;
+                    }
+
+                    kickMeterBar.Value = (int)config[19];
+                    kickMeterBox.Text = "" + kickMeterBar.Value;
                 }
 
                 //Polygon Patch
@@ -378,11 +393,20 @@ namespace NEXT_Tuning_App
                     numScholarships.Value = config[25];
                 }
 
-
+                else if (i == 26)
+                {
+                    if (config[26] == 0)
+                    {
+                        EnableAutoKick.Checked = false;
+                    }
+                    else
+                    {
+                        EnableAutoKick.Checked = true;
+                    }
+                }
             }
         }
 
         #endregion
-
     }
 }

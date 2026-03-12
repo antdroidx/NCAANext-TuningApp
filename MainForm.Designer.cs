@@ -39,13 +39,11 @@ namespace NEXT_Tuning_App
             btnPickTeamTextColor = new Button();
             pnlTeamTextColorPreview = new Panel();
             lblTeamTextColorRaw = new Label();
-            PPGBox = new TextBox();
             label7 = new Label();
             groupBox2 = new GroupBox();
             btnLoad = new Button();
             label8 = new Label();
             label10 = new Label();
-            label11 = new Label();
             label12 = new Label();
             label14 = new Label();
             lblMatchUpColorRaw = new Label();
@@ -64,6 +62,7 @@ namespace NEXT_Tuning_App
             OptOutBox = new CheckBox();
             groupStartYear = new GroupBox();
             groupSimEngine = new GroupBox();
+            label11 = new Label();
             label20 = new Label();
             label21 = new Label();
             label19 = new Label();
@@ -72,14 +71,16 @@ namespace NEXT_Tuning_App
             numSimPassYds = new NumericUpDown();
             groupConfChamps = new GroupBox();
             groupColors = new GroupBox();
-            EasyKickBox = new CheckBox();
             groupKickMeter = new GroupBox();
+            EnableKickSliderBox = new CheckBox();
+            kickMeterBox = new TextBox();
+            label27 = new Label();
+            label26 = new Label();
+            label25 = new Label();
+            label24 = new Label();
+            kickMeterBar = new TrackBar();
             textBox1 = new TextBox();
-            KickMeterValue = new TextBox();
-            label6 = new Label();
-            KickDiffComboBox = new ComboBox();
             label5 = new Label();
-            numKickSlider = new NumericUpDown();
             pictureBox3 = new PictureBox();
             groupPolygon = new GroupBox();
             PolygonBox = new CheckBox();
@@ -87,10 +88,13 @@ namespace NEXT_Tuning_App
             label17 = new Label();
             ImpactMenuSettingBox = new ComboBox();
             ImpactPlayerBox = new CheckBox();
-            label22 = new Label();
             groupRecruiting = new GroupBox();
             label23 = new Label();
             numScholarships = new NumericUpDown();
+            groupAutoKick = new GroupBox();
+            EnableAutoKick = new CheckBox();
+            label6 = new Label();
+            label22 = new Label();
             ((System.ComponentModel.ISupportInitialize)numPlaysPerGame).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numAutoBids).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numStartYear).BeginInit();
@@ -113,12 +117,13 @@ namespace NEXT_Tuning_App
             groupConfChamps.SuspendLayout();
             groupColors.SuspendLayout();
             groupKickMeter.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)numKickSlider).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)kickMeterBar).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).BeginInit();
             groupPolygon.SuspendLayout();
             groupImpactPlayer.SuspendLayout();
             groupRecruiting.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numScholarships).BeginInit();
+            groupAutoKick.SuspendLayout();
             SuspendLayout();
             // 
             // btnOpen
@@ -153,15 +158,14 @@ namespace NEXT_Tuning_App
             // 
             // numPlaysPerGame
             // 
-            numPlaysPerGame.Location = new Point(17, 27);
-            numPlaysPerGame.Maximum = new decimal(new int[] { 120, 0, 0, 0 });
+            numPlaysPerGame.Location = new Point(216, 27);
+            numPlaysPerGame.Maximum = new decimal(new int[] { 150, 0, 0, 0 });
             numPlaysPerGame.Minimum = new decimal(new int[] { 80, 0, 0, 0 });
             numPlaysPerGame.Name = "numPlaysPerGame";
-            numPlaysPerGame.Size = new Size(75, 22);
+            numPlaysPerGame.Size = new Size(51, 22);
             numPlaysPerGame.TabIndex = 6;
             numPlaysPerGame.TextAlign = HorizontalAlignment.Center;
-            numPlaysPerGame.Value = new decimal(new int[] { 100, 0, 0, 0 });
-            numPlaysPerGame.ValueChanged += numPlaysPerGame_ValueChanged;
+            numPlaysPerGame.Value = new decimal(new int[] { 136, 0, 0, 0 });
             // 
             // numAutoBids
             // 
@@ -248,7 +252,7 @@ namespace NEXT_Tuning_App
             groupFatigue.Controls.Add(numFatigueHeisman);
             groupFatigue.Controls.Add(numFatigueVarsity);
             groupFatigue.Controls.Add(numFatigueAA);
-            groupFatigue.Location = new Point(374, 79);
+            groupFatigue.Location = new Point(378, 171);
             groupFatigue.Name = "groupFatigue";
             groupFatigue.Size = new Size(193, 256);
             groupFatigue.TabIndex = 14;
@@ -269,7 +273,7 @@ namespace NEXT_Tuning_App
             // 
             label9.AutoSize = true;
             label9.Font = new Font("Microsoft Sans Serif", 8.25F);
-            label9.Location = new Point(3, 208);
+            label9.Location = new Point(4, 210);
             label9.Name = "label9";
             label9.Size = new Size(185, 13);
             label9.TabIndex = 18;
@@ -343,26 +347,14 @@ namespace NEXT_Tuning_App
             lblTeamTextColorRaw.TabIndex = 19;
             lblTeamTextColorRaw.Text = "Raw Value";
             // 
-            // PPGBox
-            // 
-            PPGBox.BackColor = SystemColors.Info;
-            PPGBox.Enabled = false;
-            PPGBox.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            PPGBox.Location = new Point(115, 24);
-            PPGBox.Name = "PPGBox";
-            PPGBox.ReadOnly = true;
-            PPGBox.Size = new Size(52, 25);
-            PPGBox.TabIndex = 20;
-            PPGBox.TextAlign = HorizontalAlignment.Center;
-            // 
             // label7
             // 
             label7.AutoSize = true;
-            label7.Location = new Point(170, 28);
+            label7.Location = new Point(12, 29);
             label7.Name = "label7";
-            label7.Size = new Size(166, 16);
+            label7.Size = new Size(198, 16);
             label7.TabIndex = 21;
-            label7.Text = "Predicted Plays Per Game";
+            label7.Text = "Total Offensive Plays Per Game";
             // 
             // groupBox2
             // 
@@ -392,12 +384,12 @@ namespace NEXT_Tuning_App
             // 
             label8.AutoSize = true;
             label8.BackColor = Color.PaleTurquoise;
-            label8.Font = new Font("Microsoft Sans Serif", 15.75F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label8.Location = new Point(389, 632);
+            label8.Font = new Font("Microsoft Sans Serif", 20.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            label8.Location = new Point(388, 48);
             label8.Name = "label8";
-            label8.Size = new Size(321, 25);
+            label8.Size = new Size(456, 31);
             label8.TabIndex = 23;
-            label8.Text = "NCAA Next Tuning App v1.20";
+            label8.Text = "NCAA Next Companion App v1.23";
             label8.UseMnemonic = false;
             // 
             // label10
@@ -408,16 +400,6 @@ namespace NEXT_Tuning_App
             label10.Size = new Size(192, 20);
             label10.TabIndex = 24;
             label10.Text = "User Team Highlighted Text Color";
-            // 
-            // label11
-            // 
-            label11.AutoSize = true;
-            label11.Font = new Font("Microsoft Sans Serif", 8.25F);
-            label11.Location = new Point(17, 65);
-            label11.Name = "label11";
-            label11.Size = new Size(174, 13);
-            label11.TabIndex = 19;
-            label11.Text = "OG Default: 100  NEXT Default: 94";
             // 
             // label12
             // 
@@ -471,7 +453,7 @@ namespace NEXT_Tuning_App
             groupSpeedNerf.Controls.Add(label15);
             groupSpeedNerf.Controls.Add(SpeedNerfAmount);
             groupSpeedNerf.Controls.Add(SpeedNerfBox);
-            groupSpeedNerf.Location = new Point(374, 345);
+            groupSpeedNerf.Location = new Point(378, 433);
             groupSpeedNerf.Name = "groupSpeedNerf";
             groupSpeedNerf.Size = new Size(193, 106);
             groupSpeedNerf.TabIndex = 30;
@@ -515,9 +497,9 @@ namespace NEXT_Tuning_App
             // pictureBox1
             // 
             pictureBox1.Image = (Image)resources.GetObject("pictureBox1.Image");
-            pictureBox1.Location = new Point(525, 555);
+            pictureBox1.Location = new Point(657, 641);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(185, 70);
+            pictureBox1.Size = new Size(204, 76);
             pictureBox1.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox1.TabIndex = 31;
             pictureBox1.TabStop = false;
@@ -525,9 +507,9 @@ namespace NEXT_Tuning_App
             // pictureBox2
             // 
             pictureBox2.Image = (Image)resources.GetObject("pictureBox2.Image");
-            pictureBox2.Location = new Point(389, 555);
+            pictureBox2.Location = new Point(527, 641);
             pictureBox2.Name = "pictureBox2";
-            pictureBox2.Size = new Size(70, 70);
+            pictureBox2.Size = new Size(79, 76);
             pictureBox2.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox2.TabIndex = 32;
             pictureBox2.TabStop = false;
@@ -538,7 +520,7 @@ namespace NEXT_Tuning_App
             groupOptOut.Controls.Add(label16);
             groupOptOut.Controls.Add(numOptOutRating);
             groupOptOut.Controls.Add(OptOutBox);
-            groupOptOut.Location = new Point(12, 307);
+            groupOptOut.Location = new Point(12, 266);
             groupOptOut.Name = "groupOptOut";
             groupOptOut.Size = new Size(342, 104);
             groupOptOut.TabIndex = 33;
@@ -592,7 +574,7 @@ namespace NEXT_Tuning_App
             // groupStartYear
             // 
             groupStartYear.Controls.Add(numStartYear);
-            groupStartYear.Location = new Point(374, 12);
+            groupStartYear.Location = new Point(378, 103);
             groupStartYear.Name = "groupStartYear";
             groupStartYear.Size = new Size(193, 61);
             groupStartYear.TabIndex = 34;
@@ -601,6 +583,7 @@ namespace NEXT_Tuning_App
             // 
             // groupSimEngine
             // 
+            groupSimEngine.Controls.Add(label11);
             groupSimEngine.Controls.Add(label20);
             groupSimEngine.Controls.Add(label21);
             groupSimEngine.Controls.Add(label19);
@@ -608,20 +591,27 @@ namespace NEXT_Tuning_App
             groupSimEngine.Controls.Add(numSimRushYds);
             groupSimEngine.Controls.Add(numSimPassYds);
             groupSimEngine.Controls.Add(numPlaysPerGame);
-            groupSimEngine.Controls.Add(PPGBox);
             groupSimEngine.Controls.Add(label7);
-            groupSimEngine.Controls.Add(label11);
-            groupSimEngine.Location = new Point(12, 122);
+            groupSimEngine.Location = new Point(12, 115);
             groupSimEngine.Name = "groupSimEngine";
-            groupSimEngine.Size = new Size(342, 176);
+            groupSimEngine.Size = new Size(342, 145);
             groupSimEngine.TabIndex = 35;
             groupSimEngine.TabStop = false;
             groupSimEngine.Text = "Sim Engine";
             // 
+            // label11
+            // 
+            label11.AutoSize = true;
+            label11.Location = new Point(273, 29);
+            label11.Name = "label11";
+            label11.Size = new Size(46, 16);
+            label11.TabIndex = 28;
+            label11.Text = "Snaps";
+            // 
             // label20
             // 
             label20.AutoSize = true;
-            label20.Location = new Point(17, 144);
+            label20.Location = new Point(9, 103);
             label20.Name = "label20";
             label20.Size = new Size(201, 16);
             label20.TabIndex = 27;
@@ -630,7 +620,7 @@ namespace NEXT_Tuning_App
             // label21
             // 
             label21.AutoSize = true;
-            label21.Location = new Point(17, 105);
+            label21.Location = new Point(9, 64);
             label21.Name = "label21";
             label21.Size = new Size(201, 16);
             label21.TabIndex = 26;
@@ -639,7 +629,7 @@ namespace NEXT_Tuning_App
             // label19
             // 
             label19.AutoSize = true;
-            label19.Location = new Point(291, 144);
+            label19.Location = new Point(273, 105);
             label19.Name = "label19";
             label19.Size = new Size(43, 16);
             label19.TabIndex = 25;
@@ -648,7 +638,7 @@ namespace NEXT_Tuning_App
             // label18
             // 
             label18.AutoSize = true;
-            label18.Location = new Point(291, 105);
+            label18.Location = new Point(273, 66);
             label18.Name = "label18";
             label18.Size = new Size(43, 16);
             label18.TabIndex = 24;
@@ -656,7 +646,7 @@ namespace NEXT_Tuning_App
             // 
             // numSimRushYds
             // 
-            numSimRushYds.Location = new Point(234, 140);
+            numSimRushYds.Location = new Point(216, 101);
             numSimRushYds.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
             numSimRushYds.Minimum = new decimal(new int[] { 1, 0, 0, int.MinValue });
             numSimRushYds.Name = "numSimRushYds";
@@ -666,7 +656,7 @@ namespace NEXT_Tuning_App
             // 
             // numSimPassYds
             // 
-            numSimPassYds.Location = new Point(234, 103);
+            numSimPassYds.Location = new Point(216, 64);
             numSimPassYds.Maximum = new decimal(new int[] { 2, 0, 0, 0 });
             numSimPassYds.Minimum = new decimal(new int[] { 1, 0, 0, int.MinValue });
             numSimPassYds.Name = "numSimPassYds";
@@ -678,7 +668,7 @@ namespace NEXT_Tuning_App
             // 
             groupConfChamps.Controls.Add(numAutoBids);
             groupConfChamps.Controls.Add(label12);
-            groupConfChamps.Location = new Point(12, 420);
+            groupConfChamps.Location = new Point(12, 376);
             groupConfChamps.Name = "groupConfChamps";
             groupConfChamps.Size = new Size(342, 65);
             groupConfChamps.TabIndex = 36;
@@ -695,112 +685,133 @@ namespace NEXT_Tuning_App
             groupColors.Controls.Add(lblMatchUpColorRaw);
             groupColors.Controls.Add(lblTeamTextColorRaw);
             groupColors.Controls.Add(label14);
-            groupColors.Location = new Point(587, 153);
+            groupColors.Location = new Point(591, 244);
             groupColors.Name = "groupColors";
-            groupColors.Size = new Size(270, 329);
+            groupColors.Size = new Size(270, 308);
             groupColors.TabIndex = 38;
             groupColors.TabStop = false;
             groupColors.Text = "Colorize";
             // 
-            // EasyKickBox
-            // 
-            EasyKickBox.AutoSize = true;
-            EasyKickBox.Location = new Point(16, 141);
-            EasyKickBox.Name = "EasyKickBox";
-            EasyKickBox.Size = new Size(131, 20);
-            EasyKickBox.TabIndex = 0;
-            EasyKickBox.Text = "Enable Easy Kick";
-            EasyKickBox.UseVisualStyleBackColor = true;
-            EasyKickBox.Visible = false;
-            EasyKickBox.CheckedChanged += EasyKickBox_CheckedChanged;
-            // 
             // groupKickMeter
             // 
+            groupKickMeter.Controls.Add(EnableKickSliderBox);
+            groupKickMeter.Controls.Add(kickMeterBox);
+            groupKickMeter.Controls.Add(label27);
+            groupKickMeter.Controls.Add(label26);
+            groupKickMeter.Controls.Add(label25);
+            groupKickMeter.Controls.Add(label24);
+            groupKickMeter.Controls.Add(kickMeterBar);
             groupKickMeter.Controls.Add(textBox1);
-            groupKickMeter.Controls.Add(KickMeterValue);
-            groupKickMeter.Controls.Add(label6);
-            groupKickMeter.Controls.Add(KickDiffComboBox);
             groupKickMeter.Controls.Add(label5);
-            groupKickMeter.Controls.Add(numKickSlider);
-            groupKickMeter.Controls.Add(EasyKickBox);
-            groupKickMeter.Location = new Point(12, 491);
+            groupKickMeter.Location = new Point(12, 455);
             groupKickMeter.Name = "groupKickMeter";
-            groupKickMeter.Size = new Size(342, 169);
+            groupKickMeter.Size = new Size(342, 161);
             groupKickMeter.TabIndex = 39;
             groupKickMeter.TabStop = false;
             groupKickMeter.Text = "Kick Meter Slider";
+            // 
+            // EnableKickSliderBox
+            // 
+            EnableKickSliderBox.AutoSize = true;
+            EnableKickSliderBox.Location = new Point(9, 28);
+            EnableKickSliderBox.Name = "EnableKickSliderBox";
+            EnableKickSliderBox.Size = new Size(183, 20);
+            EnableKickSliderBox.TabIndex = 45;
+            EnableKickSliderBox.Text = "Enable Custom Kick Slider";
+            EnableKickSliderBox.UseVisualStyleBackColor = true;
+            EnableKickSliderBox.CheckedChanged += EnableKickSliderBox_CheckedChanged;
+            // 
+            // kickMeterBox
+            // 
+            kickMeterBox.BackColor = SystemColors.Info;
+            kickMeterBox.BorderStyle = BorderStyle.FixedSingle;
+            kickMeterBox.Location = new Point(127, 120);
+            kickMeterBox.Name = "kickMeterBox";
+            kickMeterBox.ReadOnly = true;
+            kickMeterBox.Size = new Size(37, 22);
+            kickMeterBox.TabIndex = 44;
+            kickMeterBox.Text = "50";
+            kickMeterBox.TextAlign = HorizontalAlignment.Center;
+            // 
+            // label27
+            // 
+            label27.AutoSize = true;
+            label27.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label27.Location = new Point(209, 60);
+            label27.Name = "label27";
+            label27.Size = new Size(38, 13);
+            label27.TabIndex = 43;
+            label27.Text = "Varsity";
+            // 
+            // label26
+            // 
+            label26.AutoSize = true;
+            label26.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label26.Location = new Point(115, 60);
+            label26.Name = "label26";
+            label26.Size = new Size(21, 13);
+            label26.TabIndex = 42;
+            label26.Text = "AA";
+            // 
+            // label25
+            // 
+            label25.AutoSize = true;
+            label25.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label25.Location = new Point(311, 60);
+            label25.Name = "label25";
+            label25.Size = new Size(19, 13);
+            label25.TabIndex = 31;
+            label25.Text = "JV";
+            // 
+            // label24
+            // 
+            label24.AutoSize = true;
+            label24.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label24.Location = new Point(6, 60);
+            label24.Name = "label24";
+            label24.Size = new Size(48, 13);
+            label24.TabIndex = 30;
+            label24.Text = "Heisman";
+            // 
+            // kickMeterBar
+            // 
+            kickMeterBar.Enabled = false;
+            kickMeterBar.Location = new Point(22, 76);
+            kickMeterBar.Maximum = 50;
+            kickMeterBar.Minimum = 25;
+            kickMeterBar.Name = "kickMeterBar";
+            kickMeterBar.Size = new Size(308, 45);
+            kickMeterBar.TabIndex = 29;
+            kickMeterBar.Value = 50;
+            kickMeterBar.Scroll += kickMeterBar_Scroll;
             // 
             // textBox1
             // 
             textBox1.BorderStyle = BorderStyle.None;
             textBox1.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            textBox1.Location = new Point(169, 42);
+            textBox1.Location = new Point(180, 120);
             textBox1.Multiline = true;
             textBox1.Name = "textBox1";
             textBox1.ReadOnly = true;
-            textBox1.Size = new Size(167, 119);
+            textBox1.Size = new Size(150, 38);
             textBox1.TabIndex = 28;
-            textBox1.Text = "Default Speed Target Values:\r\nHeisman: 25\r\nAll-American: 33\r\nVarsity: 42\r\nJunior Varsity: 50\r\n\r\nThe YELLOW box should be used to compare to these values";
-            // 
-            // KickMeterValue
-            // 
-            KickMeterValue.BackColor = SystemColors.Info;
-            KickMeterValue.Enabled = false;
-            KickMeterValue.Font = new Font("Segoe UI", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            KickMeterValue.Location = new Point(97, 107);
-            KickMeterValue.Name = "KickMeterValue";
-            KickMeterValue.ReadOnly = true;
-            KickMeterValue.Size = new Size(52, 27);
-            KickMeterValue.TabIndex = 27;
-            KickMeterValue.TextAlign = HorizontalAlignment.Center;
-            // 
-            // label6
-            // 
-            label6.AutoSize = true;
-            label6.Font = new Font("Microsoft Sans Serif", 8.25F);
-            label6.Location = new Point(16, 27);
-            label6.Name = "label6";
-            label6.Size = new Size(72, 13);
-            label6.TabIndex = 26;
-            label6.Text = "User Difficulty";
-            // 
-            // KickDiffComboBox
-            // 
-            KickDiffComboBox.FormattingEnabled = true;
-            KickDiffComboBox.Items.AddRange(new object[] { "Junior Varsity", "Varsity", "All-American", "Heisman" });
-            KickDiffComboBox.Location = new Point(16, 47);
-            KickDiffComboBox.Name = "KickDiffComboBox";
-            KickDiffComboBox.Size = new Size(133, 24);
-            KickDiffComboBox.TabIndex = 9;
-            KickDiffComboBox.SelectedIndexChanged += KickDiffComboBox_SelectedIndexChanged;
+            textBox1.Text = "Default Speed Target Values:\r\nH: 25 | AA: 33 | V: 42 | JV: 50\r\n";
             // 
             // label5
             // 
             label5.AutoSize = true;
-            label5.Location = new Point(6, 90);
+            label5.Location = new Point(13, 122);
             label5.Name = "label5";
-            label5.Size = new Size(151, 16);
+            label5.Size = new Size(116, 16);
             label5.TabIndex = 8;
-            label5.Text = "Kick Meter Speed Value";
-            // 
-            // numKickSlider
-            // 
-            numKickSlider.Location = new Point(16, 111);
-            numKickSlider.Maximum = new decimal(new int[] { 75, 0, 0, 0 });
-            numKickSlider.Minimum = new decimal(new int[] { 25, 0, 0, 0 });
-            numKickSlider.Name = "numKickSlider";
-            numKickSlider.Size = new Size(58, 22);
-            numKickSlider.TabIndex = 7;
-            numKickSlider.TextAlign = HorizontalAlignment.Center;
-            numKickSlider.Value = new decimal(new int[] { 50, 0, 0, 0 });
-            numKickSlider.ValueChanged += numEasyKick_ValueChanged;
+            label5.Text = "Kick Meter Speed ";
             // 
             // pictureBox3
             // 
             pictureBox3.Image = (Image)resources.GetObject("pictureBox3.Image");
-            pictureBox3.Location = new Point(740, 555);
+            pictureBox3.Location = new Point(378, 620);
             pictureBox3.Name = "pictureBox3";
-            pictureBox3.Size = new Size(117, 105);
+            pictureBox3.Size = new Size(99, 97);
             pictureBox3.SizeMode = PictureBoxSizeMode.StretchImage;
             pictureBox3.TabIndex = 40;
             pictureBox3.TabStop = false;
@@ -808,9 +819,9 @@ namespace NEXT_Tuning_App
             // groupPolygon
             // 
             groupPolygon.Controls.Add(PolygonBox);
-            groupPolygon.Location = new Point(587, 488);
+            groupPolygon.Location = new Point(591, 561);
             groupPolygon.Name = "groupPolygon";
-            groupPolygon.Size = new Size(270, 61);
+            groupPolygon.Size = new Size(270, 50);
             groupPolygon.TabIndex = 41;
             groupPolygon.TabStop = false;
             groupPolygon.Text = "Polygon Patch";
@@ -819,7 +830,7 @@ namespace NEXT_Tuning_App
             // 
             PolygonBox.AutoSize = true;
             PolygonBox.Font = new Font("Microsoft Sans Serif", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            PolygonBox.Location = new Point(9, 28);
+            PolygonBox.Location = new Point(6, 21);
             PolygonBox.Name = "PolygonBox";
             PolygonBox.Size = new Size(212, 19);
             PolygonBox.TabIndex = 0;
@@ -831,7 +842,7 @@ namespace NEXT_Tuning_App
             groupImpactPlayer.Controls.Add(label17);
             groupImpactPlayer.Controls.Add(ImpactMenuSettingBox);
             groupImpactPlayer.Controls.Add(ImpactPlayerBox);
-            groupImpactPlayer.Location = new Point(587, 12);
+            groupImpactPlayer.Location = new Point(591, 103);
             groupImpactPlayer.Name = "groupImpactPlayer";
             groupImpactPlayer.Size = new Size(270, 131);
             groupImpactPlayer.TabIndex = 35;
@@ -867,23 +878,13 @@ namespace NEXT_Tuning_App
             ImpactPlayerBox.Text = "Enable Impact Players";
             ImpactPlayerBox.UseVisualStyleBackColor = true;
             // 
-            // label22
-            // 
-            label22.Font = new Font("Microsoft Sans Serif", 20.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
-            label22.Location = new Point(465, 555);
-            label22.Name = "label22";
-            label22.Size = new Size(54, 70);
-            label22.TabIndex = 42;
-            label22.Text = "X";
-            label22.TextAlign = ContentAlignment.MiddleCenter;
-            // 
             // groupRecruiting
             // 
             groupRecruiting.Controls.Add(label23);
             groupRecruiting.Controls.Add(numScholarships);
-            groupRecruiting.Location = new Point(374, 457);
+            groupRecruiting.Location = new Point(376, 546);
             groupRecruiting.Name = "groupRecruiting";
-            groupRecruiting.Size = new Size(193, 74);
+            groupRecruiting.Size = new Size(195, 65);
             groupRecruiting.TabIndex = 43;
             groupRecruiting.TabStop = false;
             groupRecruiting.Text = "Recruiting";
@@ -891,7 +892,7 @@ namespace NEXT_Tuning_App
             // label23
             // 
             label23.AutoSize = true;
-            label23.Location = new Point(79, 34);
+            label23.Location = new Point(81, 32);
             label23.Name = "label23";
             label23.Size = new Size(85, 16);
             label23.TabIndex = 2;
@@ -900,7 +901,7 @@ namespace NEXT_Tuning_App
             // numScholarships
             // 
             numScholarships.Font = new Font("Microsoft Sans Serif", 11.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            numScholarships.Location = new Point(14, 30);
+            numScholarships.Location = new Point(16, 28);
             numScholarships.Maximum = new decimal(new int[] { 30, 0, 0, 0 });
             numScholarships.Minimum = new decimal(new int[] { 20, 0, 0, 0 });
             numScholarships.Name = "numScholarships";
@@ -909,33 +910,75 @@ namespace NEXT_Tuning_App
             numScholarships.TextAlign = HorizontalAlignment.Center;
             numScholarships.Value = new decimal(new int[] { 30, 0, 0, 0 });
             // 
+            // groupAutoKick
+            // 
+            groupAutoKick.Controls.Add(label22);
+            groupAutoKick.Controls.Add(label6);
+            groupAutoKick.Controls.Add(EnableAutoKick);
+            groupAutoKick.Location = new Point(12, 632);
+            groupAutoKick.Name = "groupAutoKick";
+            groupAutoKick.Size = new Size(342, 97);
+            groupAutoKick.TabIndex = 37;
+            groupAutoKick.TabStop = false;
+            groupAutoKick.Text = "Automatic CPU Kicking/Punting";
+            // 
+            // EnableAutoKick
+            // 
+            EnableAutoKick.AutoSize = true;
+            EnableAutoKick.Location = new Point(6, 21);
+            EnableAutoKick.Name = "EnableAutoKick";
+            EnableAutoKick.Size = new Size(191, 20);
+            EnableAutoKick.TabIndex = 1;
+            EnableAutoKick.Text = "Enable Auto CPU Kick/Punt ";
+            EnableAutoKick.UseVisualStyleBackColor = true;
+            // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label6.Location = new Point(6, 50);
+            label6.Name = "label6";
+            label6.Size = new Size(303, 13);
+            label6.TabIndex = 2;
+            label6.Text = "This lets CPU take over user kick-offs, field goals, and punting.";
+            // 
+            // label22
+            // 
+            label22.AutoSize = true;
+            label22.Font = new Font("Microsoft Sans Serif", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            label22.Location = new Point(9, 72);
+            label22.Name = "label22";
+            label22.Size = new Size(305, 13);
+            label22.TabIndex = 3;
+            label22.Text = "DO NOT PRESS A BUTTON DURING START OF KICKOFFS!";
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = Color.WhiteSmoke;
-            ClientSize = new Size(880, 672);
+            ClientSize = new Size(869, 741);
+            Controls.Add(groupAutoKick);
             Controls.Add(groupRecruiting);
-            Controls.Add(label22);
             Controls.Add(groupImpactPlayer);
             Controls.Add(groupPolygon);
             Controls.Add(pictureBox3);
             Controls.Add(groupColors);
             Controls.Add(groupKickMeter);
             Controls.Add(groupConfChamps);
+            Controls.Add(label8);
             Controls.Add(groupSimEngine);
             Controls.Add(groupStartYear);
             Controls.Add(groupOptOut);
             Controls.Add(pictureBox2);
             Controls.Add(pictureBox1);
             Controls.Add(groupSpeedNerf);
-            Controls.Add(label8);
             Controls.Add(groupBox2);
             Controls.Add(groupFatigue);
             Font = new Font("Microsoft Sans Serif", 9.75F);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "MainForm";
-            Text = "NCAA Next Tuning App";
+            Text = "NCAA Next Companion";
             ((System.ComponentModel.ISupportInitialize)numPlaysPerGame).EndInit();
             ((System.ComponentModel.ISupportInitialize)numAutoBids).EndInit();
             ((System.ComponentModel.ISupportInitialize)numStartYear).EndInit();
@@ -965,7 +1008,7 @@ namespace NEXT_Tuning_App
             groupColors.PerformLayout();
             groupKickMeter.ResumeLayout(false);
             groupKickMeter.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)numKickSlider).EndInit();
+            ((System.ComponentModel.ISupportInitialize)kickMeterBar).EndInit();
             ((System.ComponentModel.ISupportInitialize)pictureBox3).EndInit();
             groupPolygon.ResumeLayout(false);
             groupPolygon.PerformLayout();
@@ -974,6 +1017,8 @@ namespace NEXT_Tuning_App
             groupRecruiting.ResumeLayout(false);
             groupRecruiting.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)numScholarships).EndInit();
+            groupAutoKick.ResumeLayout(false);
+            groupAutoKick.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -989,13 +1034,11 @@ namespace NEXT_Tuning_App
         private Button btnPickTeamTextColor;
         private Panel pnlTeamTextColorPreview;
         private Label lblTeamTextColorRaw;
-        private TextBox PPGBox;
         private Label label7;
         private Label label9;
         private GroupBox groupBox2;
         private Label label8;
         private Label label10;
-        private Label label11;
         private Label label12;
         private Label label13;
         private Label label14;
@@ -1019,13 +1062,7 @@ namespace NEXT_Tuning_App
         private GroupBox groupColors;
         private Button btnLoad;
         private GroupBox groupKickMeter;
-        private NumericUpDown numKickSlider;
-        private CheckBox EasyKickBox;
         private Label label5;
-        private ComboBox KickDiffComboBox;
-        private Label label6;
-        private TextBox KickMeterValue;
-        private TextBox textBox1;
         private PictureBox pictureBox3;
         private GroupBox groupPolygon;
         private CheckBox PolygonBox;
@@ -1039,9 +1076,21 @@ namespace NEXT_Tuning_App
         private Label label21;
         private Label label19;
         private Label label18;
-        private Label label22;
         private GroupBox groupRecruiting;
         private Label label23;
         private NumericUpDown numScholarships;
+        private Label label11;
+        private TrackBar kickMeterBar;
+        private Label label26;
+        private Label label25;
+        private Label label24;
+        private Label label27;
+        private TextBox textBox1;
+        private TextBox kickMeterBox;
+        private CheckBox EnableKickSliderBox;
+        private GroupBox groupAutoKick;
+        private CheckBox EnableAutoKick;
+        private Label label22;
+        private Label label6;
     }
 }
