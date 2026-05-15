@@ -4,6 +4,9 @@
     <_LastSelectedProfileId>D:\AppProjects\NCAA-NEXT-Tuning-App\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Update="Conversions.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Load.cs">
       <SubType>Form</SubType>
     </Compile>

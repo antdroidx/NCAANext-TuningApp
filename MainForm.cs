@@ -20,6 +20,8 @@ namespace NEXT_Tuning_App
 
         private bool DoNotTrigger = false;
 
+        private double currentVersion = 16.5;
+
         public MainForm()
         {
             InitializeComponent();
@@ -27,9 +29,8 @@ namespace NEXT_Tuning_App
         }
 
         //Version Check
-        private void CheckVersion()
+        private bool CheckVersion()
         {
-            double currentVersion = 16.4;
             string x = "";
             for (int i = 0; i < 4; i++)
             {
@@ -38,13 +39,15 @@ namespace NEXT_Tuning_App
             }
 
 
-            if (Convert.ToDouble(x) >= 16.4)
+            if (Convert.ToDouble(x) >= currentVersion)
             {
                 //MessageBox.Show("Correct Version Loaded");
+                return true;
             }
             else
             {
                 MessageBox.Show("This app only works with version " + currentVersion + " or higher.\n\nThe loaded file is on version " + x + ".");
+                return false;
             }
 
         }
@@ -55,7 +58,7 @@ namespace NEXT_Tuning_App
             btnSave.Enabled = enabled;
             groupStartYear.Enabled = enabled;
             groupOptOut.Enabled = enabled;
-            groupSimGameLength.Enabled = enabled;
+            groupSimEngine.Enabled = enabled;
             groupConfChamps.Enabled = enabled;
             groupFatigue.Enabled = enabled;
             groupSpeedNerf.Enabled = enabled;
@@ -63,6 +66,7 @@ namespace NEXT_Tuning_App
             groupKickMeter.Enabled = enabled;
             groupPolygon.Enabled = enabled;
             groupImpactPlayer.Enabled = enabled;
+            groupRecruiting.Enabled = enabled;
         }
 
         //Open File
@@ -83,11 +87,16 @@ namespace NEXT_Tuning_App
             }
 
             DoNotTrigger = true;
-            CheckVersion();
-
-            lblFile.Text = $"{Path.GetFileName(ofd.FileName)} (SLUS @ 0x{originBase:X})";
-            LoadValues();
-            ToggleUI(true);
+            if (!CheckVersion())
+            {
+                Close();
+            }
+            else
+            {
+                lblFile.Text = $"{Path.GetFileName(ofd.FileName)} (SLUS @ 0x{originBase:X})";
+                LoadValues();
+                ToggleUI(true);
+            }
             DoNotTrigger = false;
         }
 
@@ -168,7 +177,7 @@ namespace NEXT_Tuning_App
             matchupTextColor = dlg.Color;
             pnlMatchUpColorPreview.BackColor = matchupTextColor;
 
-            lblTeamTextColorRaw.Text =
+            lblMatchUpColorRaw.Text =
                 $"RGB: {matchupTextColor.R},{matchupTextColor.G},{matchupTextColor.B} " +
                 $"(R:{matchupTextColor.R:X2} G:{matchupTextColor.G:X2} B:{matchupTextColor.B:X2})";
         }
@@ -176,15 +185,6 @@ namespace NEXT_Tuning_App
         #endregion
 
         #region Dynamic Boxes
-
-
-        private void numPlaysPerGame_ValueChanged(object sender, EventArgs e)
-        {
-            double ppgVal = Convert.ToDouble(numPlaysPerGame.Value);
-
-            int PPG = Convert.ToInt32((-1.6667 * ppgVal) + 290.67);
-            PPGBox.Text = PPG.ToString();
-        }
 
         private void SpeedNerfBox_CheckedChanged(object sender, EventArgs e)
         {
@@ -231,54 +231,61 @@ namespace NEXT_Tuning_App
             }
         }
 
-        private void EasyKickBox_CheckedChanged(object sender, EventArgs e)
+        /*
+        private void kickMeterBar_Scroll(object sender, EventArgs e)
         {
-            if (EasyKickBox.Checked)
-            {
-                numKickSlider.Enabled = true;
-                numKickSlider.ReadOnly = false;
-                numKickSlider.Value = 50;
-            }
-            else
-            {
-                numKickSlider.Enabled = false;
-                numKickSlider.ReadOnly = true;
-            }
-        }
-
-        private void numEasyKick_ValueChanged(object sender, EventArgs e)
-        {
-            if (DoNotTrigger) return;
-
             if (KickDiffComboBox.SelectedIndex >= 0)
             {
-                double difficultyFactor = 8.33;
-                int difficulty = (int)KickDiffComboBox.SelectedIndex;
-
-                KickMeterValue.Text = Convert.ToString(Math.Round(Convert.ToDouble(numKickSlider.Value) - difficultyFactor * difficulty, 0));
+                kickMeterBox.Text = "" + kickMeterBar.Value;
             }
             else
             {
                 MessageBox.Show("Please choose a user difficulty setting!");
             }
         }
+
         private void KickDiffComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (KickDiffComboBox.SelectedIndex >= 0)
             {
                 double difficultyFactor = 8.33;
                 int difficulty = (int)KickDiffComboBox.SelectedIndex;
-                numKickSlider.Value = 50;
-                KickMeterValue.Text = Convert.ToString(Math.Round(Convert.ToDouble(numKickSlider.Value) - difficultyFactor * difficulty, 0));
+                if (difficulty == 0) kickMeterBar.Value = 50;
+                else if (difficulty == 1) kickMeterBar.Value = 42;
+                else if (difficulty == 2) kickMeterBar.Value = 33;
+                else if (difficulty == 3) kickMeterBar.Value = 25;
+                else kickMeterBar.Value = 35;
+
+                kickMeterBox.Text = "" + kickMeterBar.Value;
             }
             else
             {
                 MessageBox.Show("Please set the kicking meter variable!");
             }
         }
+        */
 
         #endregion
 
 
+
+        private void kickMeterBar_Scroll(object sender, EventArgs e)
+        {
+            kickMeterBox.Text = "" + kickMeterBar.Value;
+        }
+
+        private void EnableKickSliderBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (EnableKickSliderBox.Checked)
+            {
+                kickMeterBar.Enabled = true;
+                kickMeterBox.Enabled = true;
+            }
+            else
+            {
+                kickMeterBar.Enabled = false;
+                kickMeterBox.Enabled = false;
+            }
+        }
     }
 }
