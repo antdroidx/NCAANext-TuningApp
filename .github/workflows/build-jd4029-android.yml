@@ -46,16 +46,21 @@ jobs:
           mkdir -p inspect
           readelf -h "$LIB" > inspect/libRecompiler-readelf.txt 2>&1 || true
           nm -A -g --defined-only "$LIB" > inspect/libRecompiler-symbols.txt 2>&1 || true
+          nm -A -u "$LIB" > inspect/libRecompiler-undefined.txt 2>&1 || true
+          strings -a "$LIB" > inspect/libRecompiler-strings.txt 2>&1 || true
           grep -Ei 'recCpu|psxRec|mVU|microVU|R5900|Reserve|Execute|recReset|recShutdown' inspect/libRecompiler-symbols.txt | head -n 300 || true
+          grep -Ei 'Memory|R5900|iR5900|recLUT|microVU|aarch64|arm64|pcsx2' inspect/libRecompiler-strings.txt | head -n 300 || true
           wc -c "$LIB"
-          wc -l inspect/libRecompiler-symbols.txt || true
+          wc -l inspect/libRecompiler-symbols.txt inspect/libRecompiler-undefined.txt || true
 
       - name: Upload recompiler inspection
         uses: actions/upload-artifact@v4
         with:
           name: Aether-libRecompiler-inspection
-          path: inspect/*
-          if-no-files-found: warn
+          path: |
+            inspect/*
+            mobile/app/src/main/cpp/pcsx2/libRecompiler.a
+          if-no-files-found: error
 
       - name: Build Android delta on 3668
         run: |
