@@ -71,14 +71,16 @@ jobs:
           set -euxo pipefail
           # Keep Android ARM64 compatibility headers before overlaying the exact core.
           cp mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h /tmp/GSIntrin.android.h
+          cp mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h /tmp/SingleRegisterTypes.android.h
 
           # Keep the Android-specific CMake/source-list glue and the prebuilt
           # ARM64 recompiler archive from the scaffold. Replace same-path core
           # implementation files with the exact JDHalfrack 1.7.4029 versions.
           rsync -a --exclude=CMakeLists.txt --exclude=libRecompiler.a jd4029/pcsx2/ mobile/app/src/main/cpp/pcsx2/
 
-          # Restore only the ARM64 intrinsic shim. Texture replacement remains exact 4029.
+          # Restore only ARM64 compatibility shims. Texture replacement remains exact 4029.
           cp /tmp/GSIntrin.android.h mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h
+          cp /tmp/SingleRegisterTypes.android.h mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h
           # Keep the Android/Aether common runtime. Exact 4029 common is desktop-oriented
           # and breaks the mobile host ABI (Threading/EventSource/etc.). The emulation
           # core and GS/texture code remain exact 4029.
