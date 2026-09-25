@@ -78,6 +78,8 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/SaveState.cpp /tmp/aether-host/SaveState.cpp
           cp mobile/app/src/main/cpp/pcsx2/GameDatabase.h /tmp/aether-host/GameDatabase.h
           cp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp /tmp/aether-host/GameDatabase.cpp
+          cp mobile/app/src/main/cpp/pcsx2/Memory.h /tmp/aether-host/Memory.h
+          cp -a mobile/app/src/main/cpp/pcsx2/DebugTools /tmp/aether-host/DebugTools
 
           # Keep the Android-specific CMake/source-list glue and the prebuilt
           # ARM64 recompiler archive from the scaffold. Replace same-path core
@@ -93,6 +95,9 @@ jobs:
           cp /tmp/aether-host/SaveState.cpp mobile/app/src/main/cpp/pcsx2/SaveState.cpp
           cp /tmp/aether-host/GameDatabase.h mobile/app/src/main/cpp/pcsx2/GameDatabase.h
           cp /tmp/aether-host/GameDatabase.cpp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp
+          cp /tmp/aether-host/Memory.h mobile/app/src/main/cpp/pcsx2/Memory.h
+          rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
+          cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
           # Keep the Android/Aether common runtime. Exact 4029 common is desktop-oriented
           # and breaks the mobile host ABI (Threading/EventSource/etc.). The emulation
           # core and GS/texture code remain exact 4029.
