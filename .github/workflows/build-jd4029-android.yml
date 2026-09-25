@@ -72,6 +72,12 @@ jobs:
           # Keep Android ARM64 compatibility headers before overlaying the exact core.
           cp mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h /tmp/GSIntrin.android.h
           cp mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h /tmp/SingleRegisterTypes.android.h
+          mkdir -p /tmp/aether-host
+          cp -a mobile/app/src/main/cpp/pcsx2/PAD/Host /tmp/aether-host/PAD-Host
+          cp mobile/app/src/main/cpp/pcsx2/SaveState.h /tmp/aether-host/SaveState.h
+          cp mobile/app/src/main/cpp/pcsx2/SaveState.cpp /tmp/aether-host/SaveState.cpp
+          cp mobile/app/src/main/cpp/pcsx2/GameDatabase.h /tmp/aether-host/GameDatabase.h
+          cp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp /tmp/aether-host/GameDatabase.cpp
 
           # Keep the Android-specific CMake/source-list glue and the prebuilt
           # ARM64 recompiler archive from the scaffold. Replace same-path core
@@ -81,6 +87,12 @@ jobs:
           # Restore only ARM64 compatibility shims. Texture replacement remains exact 4029.
           cp /tmp/GSIntrin.android.h mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h
           cp /tmp/SingleRegisterTypes.android.h mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h
+          rm -rf mobile/app/src/main/cpp/pcsx2/PAD/Host
+          cp -a /tmp/aether-host/PAD-Host mobile/app/src/main/cpp/pcsx2/PAD/Host
+          cp /tmp/aether-host/SaveState.h mobile/app/src/main/cpp/pcsx2/SaveState.h
+          cp /tmp/aether-host/SaveState.cpp mobile/app/src/main/cpp/pcsx2/SaveState.cpp
+          cp /tmp/aether-host/GameDatabase.h mobile/app/src/main/cpp/pcsx2/GameDatabase.h
+          cp /tmp/aether-host/GameDatabase.cpp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp
           # Keep the Android/Aether common runtime. Exact 4029 common is desktop-oriented
           # and breaks the mobile host ABI (Threading/EventSource/etc.). The emulation
           # core and GS/texture code remain exact 4029.
@@ -103,7 +115,7 @@ jobs:
               needle = "#if defined(__AVX2__)"
               if needle not in s:
                   raise SystemExit("PCSX2Base AVX2 architecture gate not found")
-              repl = "#if defined(_M_ARM64) || defined(__aarch64__)\\n\\t#define _M_SSE 0x401\\n#elif defined(__AVX2__)"
+              repl = "#if defined(_M_ARM64) || defined(__aarch64__)" + chr(10) + chr(9) + "#define _M_SSE 0x401" + chr(10) + "#elif defined(__AVX2__)"
               s = s.replace(needle, repl, 1)
               p.write_text(s)
           PY
