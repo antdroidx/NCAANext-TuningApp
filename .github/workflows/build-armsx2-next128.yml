@@ -1,0 +1,13 @@
+name: Build ARMSX2 NEXT 128MB Test APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo workflow-ok
