@@ -1,0 +1,225 @@
+name: Build JDHalfrack 4029 Android Port
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-jd4029-android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+
+    steps:
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android NDK and CMake
+        run: |
+          yes | sdkmanager "ndk;26.3.11579264" "cmake;3.22.1" >/dev/null || true
+
+      - name: Download Aether-era Android scaffold
+        run: |
+          set -euxo pipefail
+          curl -L "https://github.com/pontos2024/PCSX2/archive/1f766cad23a3240c87880c1f29925005ac119ca0.zip" -o mobile.zip
+          unzip -q mobile.zip
+          mv PCSX2-1f766cad23a3240c87880c1f29925005ac119ca0 mobile
+
+      - name: Create 4029 Android core by forward-porting Android changes
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/JDHalfrack/pcsx2.git core
+          cd core
+          git config user.name "NCAA NEXT CI"
+          git config user.email "ci@ncaanext.invalid"
+
+          # Build a synthetic Android-port commit against the era the public
+          # Aether-derived scaffold most closely matches.
+          git checkout -q v1.7.3668
+          cp -a ../mobile/app/src/main/cpp/. .
+
+          # Keep new Android files. For modified upstream files, retain only
+          # changes which are visibly Android/Aether/PCSX2_CORE related, plus
+          # build-system files. This avoids dragging unrelated 3668-era core
+          # behavior forward into the 4029 core.
+          python3 - <<'PY'
+          import subprocess
+          from pathlib import Path
+
+          changed = subprocess.check_output(
+              ["git", "diff", "--name-only"], text=True).splitlines()
+          always = (
+              "CMakeLists.txt",
+              "cmake/",
+              "common/CMakeLists.txt",
+              "pcsx2/CMakeLists.txt",
+          )
+          needles = (
+              "ANDROID", "__ANDROID__", "Android", "android",
+              "AetherSX2", "PCSX2_CORE", "Vulkan", "EGL",
+          )
+
+          kept = []
+          reverted = []
+          for f in changed:
+              diff = subprocess.check_output(
+                  ["git", "diff", "--", f], text=True, errors="replace")
+              keep = f == "CMakeLists.txt" or f.startswith(always[1:]) or any(n in diff for n in needles)
+              if keep:
+                  kept.append(f)
+              else:
+                  subprocess.run(["git", "restore", "--", f], check=True)
+                  reverted.append(f)
+
+          print("KEPT MODIFIED FILES:")
+          print("\n".join(kept))
+          print("REVERTED NON-ANDROID MODIFICATIONS:", len(reverted))
+          PY
+
+          git add -A
+          git commit -m "Forward-port Aether-era Android host changes" || true
+          ANDROID_COMMIT=$(git rev-parse HEAD)
+          echo "ANDROID_COMMIT=$ANDROID_COMMIT" >> "$GITHUB_ENV"
+
+          # Move to the exact JDHalfrack 1.7.4029 tag and three-way apply the
+          # Android host delta.
+          git checkout -q v1.7.4029
+          set +e
+          git cherry-pick "$ANDROID_COMMIT"
+          CP_STATUS=$?
+          set -e
+          if [ $CP_STATUS -ne 0 ]; then
+            echo "Three-way merge conflicts:"
+            git diff --name-only --diff-filter=U | tee /tmp/jd4029-conflicts.txt
+            git status --short
+            exit 20
+          fi
+
+          echo "4029 HEAD after Android port:"
+          git log -2 --oneline
+
+      - name: Verify 4029 texture hash implementation
+        run: |
+          set -euxo pipefail
+          # Hard gate: the final core must retain the old TEX0/CLUT filename
+          # scheme used by JDHalfrack/PCSX2 v1.7.4029.
+          grep -F '#define TEXTURE_FILENAME_FORMAT_STRING "%" PRIx64 "-%08x"'             core/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
+          grep -F '#define TEXTURE_FILENAME_CLUT_FORMAT_STRING "%" PRIx64 "-%" PRIx64 "-%08x"'             core/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
+
+      - name: Install merged 4029 core into Android scaffold
+        run: |
+          set -euxo pipefail
+          rm -rf mobile/app/src/main/cpp
+          mkdir -p mobile/app/src/main/cpp
+          rsync -a --exclude=.git core/ mobile/app/src/main/cpp/
+
+      - name: Patch Documents storage root and package identity
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("mobile/app/src/main/java/kr/co/iefriends/pcsx2/NativeApp.java")
+          s = p.read_text()
+          if "context.getExternalFilesDir(null)" not in s:
+              raise SystemExit("NativeApp external-files root not found")
+          old = """File externalFilesDir = context.getExternalFilesDir(null);
+		if (externalFilesDir == null) {
+			externalFilesDir = context.getDataDir();
+		}"""
+          new = """File externalFilesDir = new File(
+			android.os.Environment.getExternalStoragePublicDirectory(
+				android.os.Environment.DIRECTORY_DOCUMENTS),
+			"NCAA-NEXT-PS2");
+		if (!externalFilesDir.exists())
+			externalFilesDir.mkdirs();"""
+          if old not in s:
+              raise SystemExit("Exact NativeApp root block not found")
+          p.write_text(s.replace(old, new, 1))
+
+          # Asset extraction must use the same public Documents root instead of
+          # silently writing a second copy under Android/data.
+          p = Path("mobile/app/src/main/java/kr/co/iefriends/pcsx2/MainActivity.java")
+          s = p.read_text()
+          s = s.replace(
+              "p_context.getExternalFilesDir(null) + File.separator + srcPath",
+              "new File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS), \"NCAA-NEXT-PS2\").getAbsolutePath() + File.separator + srcPath")
+          p.write_text(s)
+
+          p = Path("mobile/app/src/main/AndroidManifest.xml")
+          s = p.read_text()
+          marker = '<uses-permission android:name="android.permission.VIBRATE" />'
+          perm = '<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />\n    '
+          if "MANAGE_EXTERNAL_STORAGE" not in s:
+              s = s.replace(marker, perm + marker)
+          p.write_text(s)
+
+          p = Path("mobile/app/build.gradle")
+          s = p.read_text()
+          s = s.replace('applicationId "kr.co.iefriends.pcsx2"',
+                        'applicationId "com.ncaanext.jd4029"')
+          s = s.replace('versionCode 1', 'versionCode 4029001')
+          s = s.replace('versionName "1.0"', 'versionName "1.7.4029-next"')
+          p.write_text(s)
+          PY
+
+      - name: Add Android 11+ all-files access request
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/java/kr/co/iefriends/pcsx2/MainActivity.java")
+          s = p.read_text()
+          needle = "super.onCreate(savedInstanceState);"
+          if needle not in s:
+              raise SystemExit("MainActivity onCreate anchor not found")
+          inject = """super.onCreate(savedInstanceState);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R &&
+                !android.os.Environment.isExternalStorageManager()) {
+            try {
+                android.content.Intent intent = new android.content.Intent(
+                        android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        android.net.Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            } catch (Exception e) {
+                android.content.Intent intent = new android.content.Intent(
+                        android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivity(intent);
+            }
+        }"""
+          s = s.replace(needle, inject, 1)
+          p.write_text(s)
+          PY
+
+      - name: Build 4029 Android baseline APK
+        working-directory: mobile
+        run: |
+          set -euxo pipefail
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Collect APK
+        run: |
+          set -euxo pipefail
+          mkdir -p out
+          find mobile/app/build/outputs/apk -name '*.apk' -print
+          APK=$(find mobile/app/build/outputs/apk -name '*.apk' | head -n1)
+          cp "$APK" out/NCAA-NEXT-PS2-JD4029-baseline.apk
+          sha256sum out/NCAA-NEXT-PS2-JD4029-baseline.apk > out/NCAA-NEXT-PS2-JD4029-baseline.sha256
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NCAA-NEXT-PS2-JD4029-baseline
+          path: out/*
+          if-no-files-found: error
