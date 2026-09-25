@@ -133,16 +133,8 @@ jobs:
           s = p.read_text()
           if "context.getExternalFilesDir(null)" not in s:
               raise SystemExit("NativeApp external-files root not found")
-          old = """File externalFilesDir = context.getExternalFilesDir(null);
-		if (externalFilesDir == null) {
-			externalFilesDir = context.getDataDir();
-		}"""
-          new = """File externalFilesDir = new File(
-			android.os.Environment.getExternalStoragePublicDirectory(
-				android.os.Environment.DIRECTORY_DOCUMENTS),
-			"NCAA-NEXT-PS2");
-		if (!externalFilesDir.exists())
-			externalFilesDir.mkdirs();"""
+          old = "File externalFilesDir = context.getExternalFilesDir(null);\\n\\t\\tif (externalFilesDir == null) {\\n\\t\\t\\texternalFilesDir = context.getDataDir();\\n\\t\\t}"
+          new = "File externalFilesDir = new File(\\n\\t\\t\\tandroid.os.Environment.getExternalStoragePublicDirectory(\\n\\t\\t\\t\\tandroid.os.Environment.DIRECTORY_DOCUMENTS),\\n\\t\\t\\t\\\"NCAA-NEXT-PS2\\\");\\n\\t\\tif (!externalFilesDir.exists())\\n\\t\\t\\texternalFilesDir.mkdirs();"
           if old not in s:
               raise SystemExit("Exact NativeApp root block not found")
           p.write_text(s.replace(old, new, 1))
@@ -183,20 +175,7 @@ jobs:
           needle = "super.onCreate(savedInstanceState);"
           if needle not in s:
               raise SystemExit("MainActivity onCreate anchor not found")
-          inject = """super.onCreate(savedInstanceState);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R &&
-                !android.os.Environment.isExternalStorageManager()) {
-            try {
-                android.content.Intent intent = new android.content.Intent(
-                        android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                        android.net.Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-            } catch (Exception e) {
-                android.content.Intent intent = new android.content.Intent(
-                        android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                startActivity(intent);
-            }
-        }"""
+          inject = "super.onCreate(savedInstanceState);\\n        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R &&\\n                !android.os.Environment.isExternalStorageManager()) {\\n            try {\\n                android.content.Intent intent = new android.content.Intent(\\n                        android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,\\n                        android.net.Uri.parse(\\\"package:\\\" + getPackageName()));\\n                startActivity(intent);\\n            } catch (Exception e) {\\n                android.content.Intent intent = new android.content.Intent(\\n                        android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);\\n                startActivity(intent);\\n            }\\n        }"
           s = s.replace(needle, inject, 1)
           p.write_text(s)
           PY
