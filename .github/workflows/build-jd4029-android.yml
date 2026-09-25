@@ -99,11 +99,13 @@ jobs:
           from pathlib import Path
           p = Path("mobile/app/src/main/cpp/pcsx2/PCSX2Base.h")
           s = p.read_text()
-          old = "#if defined(__AVX2__)\\n\\t#define _M_SSE 0x501\\n#elif defined(__AVX__)\\n\\t#define _M_SSE 0x500\\n#elif defined(__SSE4_1__)\\n\\t#define _M_SSE 0x401\\n#else\\n\\t#error PCSX2 requires compiling for at least SSE 4.1\\n#endif"
-          new = "#if defined(_M_ARM64) || defined(__aarch64__)\\n\\t#define _M_SSE 0x401\\n#elif defined(__AVX2__)\\n\\t#define _M_SSE 0x501\\n#elif defined(__AVX__)\\n\\t#define _M_SSE 0x500\\n#elif defined(__SSE4_1__)\\n\\t#define _M_SSE 0x401\\n#else\\n\\t#error PCSX2 requires compiling for at least SSE 4.1\\n#endif"
-          if old not in s:
-              raise SystemExit("PCSX2Base architecture gate not found")
-          p.write_text(s.replace(old, new, 1))
+          if "defined(_M_ARM64)" not in s and "defined(__aarch64__)" not in s:
+              needle = "#if defined(__AVX2__)"
+              if needle not in s:
+                  raise SystemExit("PCSX2Base AVX2 architecture gate not found")
+              repl = "#if defined(_M_ARM64) || defined(__aarch64__)\\n\\t#define _M_SSE 0x401\\n#elif defined(__AVX2__)"
+              s = s.replace(needle, repl, 1)
+              p.write_text(s)
           PY
           grep -n -A12 '^#if defined(_M_ARM64)' mobile/app/src/main/cpp/pcsx2/PCSX2Base.h
           head -n 30 mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h
