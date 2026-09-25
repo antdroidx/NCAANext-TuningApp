@@ -85,6 +85,7 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/System.h /tmp/aether-host/System.h
           cp mobile/app/src/main/cpp/pcsx2/System.cpp /tmp/aether-host/System.cpp
           cp mobile/app/src/main/cpp/pcsx2/System/RecTypes.h /tmp/aether-host/RecTypes.h
+          cp mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h /tmp/aether-host/SysForwardDefs.h
           cp -a mobile/app/src/main/cpp/pcsx2/DebugTools /tmp/aether-host/DebugTools
 
           # Keep the Android-specific CMake/source-list glue and the prebuilt
@@ -108,6 +109,7 @@ jobs:
           cp /tmp/aether-host/System.h mobile/app/src/main/cpp/pcsx2/System.h
           cp /tmp/aether-host/System.cpp mobile/app/src/main/cpp/pcsx2/System.cpp
           cp /tmp/aether-host/RecTypes.h mobile/app/src/main/cpp/pcsx2/System/RecTypes.h
+          cp /tmp/aether-host/SysForwardDefs.h mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h
           rm -f mobile/app/src/main/cpp/pcsx2/VirtualMemory.h mobile/app/src/main/cpp/pcsx2/VirtualMemory.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
