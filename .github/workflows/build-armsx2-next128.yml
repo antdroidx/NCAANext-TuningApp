@@ -41,7 +41,7 @@ jobs:
         working-directory: src
         run: |
           set -euxo pipefail
-          python3 - <<'PY'
+          cat > /tmp/patch_next128.py <<'PY'
           from pathlib import Path
           import re
 
@@ -85,33 +85,31 @@ jobs:
                   "iopClearRecLUT(recLutReserve_RAM.data(),\n\t\tPs2MemSize::MainRam + Ps2MemSize::Rom + Ps2MemSize::Rom1 + Ps2MemSize::Rom2);",
                   "iopClearRecLUT(recLutReserve_RAM.data(),\n\t\tPs2MemSize::ExposedRam + Ps2MemSize::Rom + Ps2MemSize::Rom1 + Ps2MemSize::Rom2);",
                   "clear recLUT size")
-              old_map = """\t// Map EE RAM (32MB, mirrored)
-\tfor (int i = 0; i < 0x200; i++)
-\t{
-\t\tu32 mask = (Ps2MemSize::MainRam / _64kb) - 1;
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x0000, i, i & mask);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x2000, i, i & mask);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x3000, i, i & mask);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x8000, i, i & mask);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xa000, i, i & mask);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xb000, i, i & mask);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xc000, i, i & mask);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xd000, i, i & mask);
-\t}
-"""
-              new_map = """\t// Map all exposed EE RAM (32MB retail or 128MB devkit), mirrored.
-\tfor (int i = 0; i < static_cast<int>(Ps2MemSize::ExposedRam / _64kb); i++)
-\t{
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x0000, i, i);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x2000, i, i);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x3000, i, i);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x8000, i, i);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xa000, i, i);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xb000, i, i);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xc000, i, i);
-\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xd000, i, i);
-\t}
-"""
+              old_map = ("\t// Map EE RAM (32MB, mirrored)\n"
+                  "\tfor (int i = 0; i < 0x200; i++)\n"
+                  "\t{\n"
+                  "\t\tu32 mask = (Ps2MemSize::MainRam / _64kb) - 1;\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x0000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x2000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x3000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x8000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xa000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xb000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xc000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xd000, i, i & mask);\n"
+                  "\t}\n")
+              new_map = ("\t// Map all exposed EE RAM (32MB retail or 128MB devkit), mirrored.\n"
+                  "\tfor (int i = 0; i < static_cast<int>(Ps2MemSize::ExposedRam / _64kb); i++)\n"
+                  "\t{\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x0000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x2000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x3000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x8000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xa000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xb000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xc000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xd000, i, i);\n"
+                  "\t}\n")
               s = repl(s, old_map, new_map, "EE RAM recLUT mapping")
               s = repl(s, "if (HWADDR(pc) <= Ps2MemSize::MainRam)", "if (HWADDR(pc) <= Ps2MemSize::ExposedRam)", "overlap walk bound")
               s = repl(s, "Ps2MemSize::MainRam - oldBlock->startpc", "Ps2MemSize::ExposedRam - oldBlock->startpc", "snapshot clamp")
@@ -134,14 +132,12 @@ jobs:
                   raise SystemExit("ARM64 extra-memory refusal guard still present")
               return s
           edit("pcsx2/Memory.cpp", patch_memory)
-
           edit("pcsx2/Pcsx2Config.cpp", lambda s: repl(s, "ExtraMemory = false;", "ExtraMemory = true;", "CPU default ExtraMemory"))
-
           gradle = Path("platforms/android/app/build.gradle.kts")
-          txt = gradle.read_text()
-          txt = txt.replace('version = "3.22.1"', 'version = "3.31.6"')
+          txt = gradle.read_text().replace('version = "3.22.1"', 'version = "3.31.6"')
           gradle.write_text(txt)
           PY
+          python3 /tmp/patch_next128.py
 
           grep -n "Ps2MemSize::MainRam" pcsx2/arm64/iR5900-arm64.cpp && exit 1 || true
           grep -n "not supported by the ARM64 EE recompiler" pcsx2/Memory.cpp && exit 1 || true
