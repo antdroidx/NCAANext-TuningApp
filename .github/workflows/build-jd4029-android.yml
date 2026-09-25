@@ -79,6 +79,8 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/GameDatabase.h /tmp/aether-host/GameDatabase.h
           cp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp /tmp/aether-host/GameDatabase.cpp
           cp mobile/app/src/main/cpp/pcsx2/Memory.h /tmp/aether-host/Memory.h
+          cp mobile/app/src/main/cpp/pcsx2/vtlb.h /tmp/aether-host/vtlb.h
+          cp mobile/app/src/main/cpp/pcsx2/vtlb.cpp /tmp/aether-host/vtlb.cpp
           cp -a mobile/app/src/main/cpp/pcsx2/DebugTools /tmp/aether-host/DebugTools
 
           # Keep the Android-specific CMake/source-list glue and the prebuilt
@@ -96,8 +98,20 @@ jobs:
           cp /tmp/aether-host/GameDatabase.h mobile/app/src/main/cpp/pcsx2/GameDatabase.h
           cp /tmp/aether-host/GameDatabase.cpp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp
           cp /tmp/aether-host/Memory.h mobile/app/src/main/cpp/pcsx2/Memory.h
+          cp /tmp/aether-host/vtlb.h mobile/app/src/main/cpp/pcsx2/vtlb.h
+          cp /tmp/aether-host/vtlb.cpp mobile/app/src/main/cpp/pcsx2/vtlb.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
+
+          # Aether/Android polls input devices from VMManager. JD4029's PAD::Update()
+          # belongs to the newer desktop PAD API and is not present in this Android host.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Counters.cpp")
+          s = p.read_text()
+          s = s.replace("\tPAD::Update();", "\t// Android host polls PAD devices in VMManager.")
+          p.write_text(s)
+          PY
           # Keep the Android/Aether common runtime. Exact 4029 common is desktop-oriented
           # and breaks the mobile host ABI (Threading/EventSource/etc.). The emulation
           # core and GS/texture code remain exact 4029.
