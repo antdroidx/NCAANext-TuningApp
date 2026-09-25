@@ -82,6 +82,21 @@ jobs:
           grep -F 'TEXTURE_FILENAME_FORMAT_STRING' mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
           grep -F 'TEXTURE_FILENAME_CLUT_FORMAT_STRING' mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
 
+      - name: Apply minimal ARM64 compatibility shim
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/common/Pcsx2Defs.h")
+          s = p.read_text()
+          old = '#include "common/emitter/x86_intrin.h"'
+          new = '#if defined(_M_X86_32) || defined(_M_X86_64)\n#include "common/emitter/x86_intrin.h"\n#endif'
+          if old not in s:
+              raise SystemExit("x86 intrinsic include anchor not found")
+          p.write_text(s.replace(old, new, 1))
+          PY
+          grep -n -A3 -B1 'x86_intrin' mobile/app/src/main/cpp/common/Pcsx2Defs.h
+
       - name: Build exact-4029 core with Android ARM64 recompiler
         working-directory: mobile
         run: |
