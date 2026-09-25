@@ -86,6 +86,8 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/System.cpp /tmp/aether-host/System.cpp
           cp mobile/app/src/main/cpp/pcsx2/System/RecTypes.h /tmp/aether-host/RecTypes.h
           cp mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h /tmp/aether-host/SysForwardDefs.h
+          cp -a mobile/app/src/main/cpp/pcsx2/CDVD /tmp/aether-host/CDVD
+          cp mobile/app/src/main/cpp/pcsx2/Dump.cpp /tmp/aether-host/Dump.cpp
           cp -a mobile/app/src/main/cpp/pcsx2/DebugTools /tmp/aether-host/DebugTools
 
           # Keep the Android-specific CMake/source-list glue and the prebuilt
@@ -111,8 +113,38 @@ jobs:
           cp /tmp/aether-host/RecTypes.h mobile/app/src/main/cpp/pcsx2/System/RecTypes.h
           cp /tmp/aether-host/SysForwardDefs.h mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h
           rm -f mobile/app/src/main/cpp/pcsx2/VirtualMemory.h mobile/app/src/main/cpp/pcsx2/VirtualMemory.cpp
+          rm -rf mobile/app/src/main/cpp/pcsx2/CDVD
+          cp -a /tmp/aether-host/CDVD mobile/app/src/main/cpp/pcsx2/CDVD
+          cp /tmp/aether-host/Dump.cpp mobile/app/src/main/cpp/pcsx2/Dump.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
+
+          # JD4029 core source expects the newer std::string common runtime, while the
+          # Android scaffold keeps the wx-based SafeArray ABI. Only the diagnostic
+          # label type differs here.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Elfheader.cpp")
+          t = p.read_text()
+          t = t.replace('data(isofile.getLength(), "ELF headers")', 'data(isofile.getLength(), L"ELF headers")')
+          t = t.replace('data(hdrsize, "ELF headers")', 'data(hdrsize, L"ELF headers")')
+          p.write_text(t)
+          PY
+
+          # Clang/Android rejects implicit char -> signed-byte narrowing in this
+          # constexpr initializer. Aether carries the same constructor with explicit
+          # casts; apply that syntax-only fix to the JD4029 GS vector source.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/GS/GSVector4i.h")
+          t = p.read_text()
+          old = ': I8{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}'
+          new = ': I8{(s8)b0, (s8)b1, (s8)b2, (s8)b3, (s8)b4, (s8)b5, (s8)b6, (s8)b7, (s8)b8, (s8)b9, (s8)b10, (s8)b11, (s8)b12, (s8)b13, (s8)b14, (s8)b15}'
+          if old not in t:
+              raise SystemExit("JD4029 GSVector4i byte constructor not found")
+          t = t.replace(old, new, 1)
+          p.write_text(t)
+          PY
 
           # Aether's Android PAD host polls devices at guest vsync. JD4029 calls
           # PAD::Update() at the same frame boundary, so provide a compatibility alias.
