@@ -176,7 +176,7 @@ jobs:
           mkdir -p out
           find src/platforms/android/app/build/outputs/apk -name '*.apk' -print
           cp src/platforms/android/app/build/outputs/apk/github/debug/app-github-debug.apk out/ARMSX2-NEXT128-SOFTMEM-github-debug.apk
-          sha256sum out/ARMSX2-NEXT128-github-debug.apk > out/ARMSX2-NEXT128-SOFTMEM-github-debug.sha256
+          sha256sum out/ARMSX2-NEXT128-SOFTMEM-github-debug.apk > out/ARMSX2-NEXT128-SOFTMEM-github-debug.sha256
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
