@@ -1,4 +1,4 @@
-name: Build ARMSX2 NEXT 128MB Test APK
+name: Build ARMSX2 NEXT 128MB Softmem Test APK
 
 on:
   push:
@@ -133,6 +133,18 @@ jobs:
               return s
           edit("pcsx2/Memory.cpp", patch_memory)
           edit("pcsx2/Pcsx2Config.cpp", lambda s: repl(s, "ExtraMemory = false;", "ExtraMemory = true;", "CPU default ExtraMemory"))
+
+          # Diagnostic build #2: keep the ARM64 EE recompiler enabled, but force
+          # all EE memory ops through VTLB softmem. This isolates the remaining
+          # 128MB problem from the 4GB ARM64 fastmem mapping/backpatch path.
+          edit("pcsx2/Config.h", lambda s: repl(
+              s,
+              "#define CHECK_FASTMEM (EmuConfig.Cpu.Recompiler.EnableEE && EmuConfig.Cpu.Recompiler.EnableFastmem)",
+              "#define CHECK_FASTMEM (false)",
+              "force EE softmem"))
+          edit("pcsx2/Pcsx2Config.cpp", lambda s: repl(
+              s, "EnableFastmem = true;", "EnableFastmem = false;", "default fastmem off"))
+
           gradle = Path("platforms/android/app/build.gradle.kts")
           txt = gradle.read_text().replace('version = "3.22.1"', 'version = "3.31.6"')
           gradle.write_text(txt)
@@ -151,9 +163,9 @@ jobs:
         run: |
           set -euxo pipefail
           ./gradlew :app:assembleGithubDebug \
-            -Parmsx2.applicationId=com.armsx2.next128 \
-            -Parmsx2.versionCode=128001 \
-            -Parmsx2.versionName=2.6.1-next128 \
+            -Parmsx2.applicationId=com.armsx2.next128soft \
+            -Parmsx2.versionCode=128002 \
+            -Parmsx2.versionName=2.6.1-next128-softmem \
             -Parmsx2.hostPageSize=0x1000 \
             -Parmsx2.nativeLibName=emucore_4k \
             --stacktrace
@@ -163,12 +175,12 @@ jobs:
           set -euxo pipefail
           mkdir -p out
           find src/platforms/android/app/build/outputs/apk -name '*.apk' -print
-          cp src/platforms/android/app/build/outputs/apk/github/debug/app-github-debug.apk out/ARMSX2-NEXT128-github-debug.apk
-          sha256sum out/ARMSX2-NEXT128-github-debug.apk > out/ARMSX2-NEXT128-github-debug.sha256
+          cp src/platforms/android/app/build/outputs/apk/github/debug/app-github-debug.apk out/ARMSX2-NEXT128-SOFTMEM-github-debug.apk
+          sha256sum out/ARMSX2-NEXT128-github-debug.apk > out/ARMSX2-NEXT128-SOFTMEM-github-debug.sha256
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ARMSX2-NEXT128-test-apk
+          name: ARMSX2-NEXT128-SOFTMEM-test-apk
           path: out/*
           if-no-files-found: error
