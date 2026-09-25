@@ -78,7 +78,6 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/SaveState.cpp /tmp/aether-host/SaveState.cpp
           cp mobile/app/src/main/cpp/pcsx2/GameDatabase.h /tmp/aether-host/GameDatabase.h
           cp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp /tmp/aether-host/GameDatabase.cpp
-          cp mobile/app/src/main/cpp/pcsx2/Memory.h /tmp/aether-host/Memory.h
           cp mobile/app/src/main/cpp/pcsx2/vtlb.h /tmp/aether-host/vtlb.h
           cp mobile/app/src/main/cpp/pcsx2/vtlb.cpp /tmp/aether-host/vtlb.cpp
           cp -a mobile/app/src/main/cpp/pcsx2/DebugTools /tmp/aether-host/DebugTools
@@ -97,11 +96,87 @@ jobs:
           cp /tmp/aether-host/SaveState.cpp mobile/app/src/main/cpp/pcsx2/SaveState.cpp
           cp /tmp/aether-host/GameDatabase.h mobile/app/src/main/cpp/pcsx2/GameDatabase.h
           cp /tmp/aether-host/GameDatabase.cpp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp
-          cp /tmp/aether-host/Memory.h mobile/app/src/main/cpp/pcsx2/Memory.h
           cp /tmp/aether-host/vtlb.h mobile/app/src/main/cpp/pcsx2/vtlb.h
           cp /tmp/aether-host/vtlb.cpp mobile/app/src/main/cpp/pcsx2/vtlb.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
+
+          # Keep JD4029's vtlb/memory API, but replace only the x86-only QWC
+          # helpers with an ARM64 NEON implementation.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Memory.h")
+          s = p.read_text()
+          start = s.index('#include "common/emitter/x86_intrin.h"')
+          end = s.index('#define PSM(mem)')
+          hybrid = r'''#if defined(_M_ARM64) || defined(__aarch64__)
+          #if defined(_MSC_VER) && !defined(__clang__)
+          #include <arm64_neon.h>
+          #else
+          #include <arm_neon.h>
+          #endif
+
+          static __fi void CopyQWC(void* dest, const void* src)
+          {
+              vst1q_u8(static_cast<u8*>(dest), vld1q_u8(static_cast<const u8*>(src)));
+          }
+
+          static __fi void ZeroQWC(void* dest)
+          {
+              vst1q_u8(static_cast<u8*>(dest), vmovq_n_u8(0));
+          }
+
+          static __fi void ZeroQWC(u128& dest)
+          {
+              vst1q_u8(&dest._u8[0], vmovq_n_u8(0));
+          }
+          #else
+          #include "common/emitter/x86_intrin.h"
+
+          static __fi void CopyQWC(void* dest, const void* src)
+          {
+              _mm_store_ps((float*)dest, _mm_load_ps((const float*)src));
+          }
+
+          static __fi void ZeroQWC(void* dest)
+          {
+              _mm_store_ps((float*)dest, _mm_setzero_ps());
+          }
+
+          static __fi void ZeroQWC(u128& dest)
+          {
+              _mm_store_ps((float*)&dest, _mm_setzero_ps());
+          }
+          #endif
+
+          '''
+          s = s[:start] + hybrid + s[end:]
+          old = 'static __fi void memRead128(u32 mem, mem128_t* out) { _mm_store_si128((__m128i*)out, vtlb_memRead128(mem)); }'
+          new = '''#if defined(_M_ARM64) || defined(__aarch64__)
+          static __fi void memRead128(u32 mem, mem128_t* out) { vst1q_u32(reinterpret_cast<uint32_t*>(out), vtlb_memRead128(mem)); }
+          #else
+          static __fi void memRead128(u32 mem, mem128_t* out) { _mm_store_si128((__m128i*)out, vtlb_memRead128(mem)); }
+          #endif'''
+          if old not in s:
+              raise SystemExit("JD4029 memRead128 line not found")
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+
+          # Aether's Android PAD host polls devices at guest vsync. JD4029 calls
+          # PAD::Update() at the same frame boundary, so provide a compatibility alias.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/PAD/Host/PAD.h")
+          s = p.read_text()
+          needle = '\tvoid PollDevices();'
+          repl = '\tvoid PollDevices();\n\tinline void Update() { PollDevices(); }'
+          if needle not in s:
+              raise SystemExit("Aether PAD PollDevices declaration not found")
+          if 'inline void Update()' not in s:
+              s = s.replace(needle, repl, 1)
+          p.write_text(s)
+          PY
 
           # Aether/Android polls input devices from VMManager. JD4029's PAD::Update()
           # belongs to the newer desktop PAD API and is not present in this Android host.
