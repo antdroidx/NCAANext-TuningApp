@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: JD4029 Android Transplant
+    name: JD4029 Android ABI Test
     runs-on: ubuntu-24.04
     timeout-minutes: 180
 
@@ -37,71 +37,52 @@ jobs:
           unzip -q mobile.zip
           mv PCSX2-1f766cad23a3240c87880c1f29925005ac119ca0 mobile
 
-      - name: Inspect Aether recompiler library
+      - name: Download exact JDHalfrack 1.7.4029 source
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none --depth 1 --branch v1.7.4029 https://github.com/JDHalfrack/pcsx2.git jd4029
+          git -C jd4029 rev-parse HEAD
+          git -C jd4029 describe --tags --exact-match
+
+      - name: Inspect Aether ARM64 recompiler
         run: |
           set -euxo pipefail
           LIB=mobile/app/src/main/cpp/pcsx2/libRecompiler.a
           test -f "$LIB"
-          file "$LIB"
           mkdir -p inspect
-          readelf -h "$LIB" > inspect/libRecompiler-readelf.txt 2>&1 || true
-          nm -A -g --defined-only "$LIB" > inspect/libRecompiler-symbols.txt 2>&1 || true
+          file "$LIB" | tee inspect/libRecompiler-file.txt
+          nm -A -g --defined-only "$LIB" > inspect/libRecompiler-defined.txt 2>&1 || true
           nm -A -u "$LIB" > inspect/libRecompiler-undefined.txt 2>&1 || true
           strings -a "$LIB" > inspect/libRecompiler-strings.txt 2>&1 || true
-          grep -Ei 'recCpu|psxRec|mVU|microVU|R5900|Reserve|Execute|recReset|recShutdown' inspect/libRecompiler-symbols.txt | head -n 300 || true
-          grep -Ei 'Memory|R5900|iR5900|recLUT|microVU|aarch64|arm64|pcsx2' inspect/libRecompiler-strings.txt | head -n 300 || true
+          grep -E ' recCpu$| psxRec$| microVU0$| microVU1$' inspect/libRecompiler-defined.txt || true
           wc -c "$LIB"
-          wc -l inspect/libRecompiler-symbols.txt inspect/libRecompiler-undefined.txt || true
 
       - name: Upload recompiler inspection
         uses: actions/upload-artifact@v4
         with:
-          name: Aether-libRecompiler-inspection
+          name: Aether-libRecompiler-ABI
           path: |
             inspect/*
             mobile/app/src/main/cpp/pcsx2/libRecompiler.a
           if-no-files-found: error
 
-      - name: Build Android delta on 3668
+      - name: Overlay exact 4029 core sources
         run: |
           set -euxo pipefail
-          git clone --filter=blob:none https://github.com/JDHalfrack/pcsx2.git core
-          cd core
-          git config user.name "NCAA NEXT CI"
-          git config user.email "ci@ncaanext.invalid"
-          git checkout -q v1.7.3668
-          cp -a ../mobile/app/src/main/cpp/. .
-          git add -A
-          git commit -m "Aether era Android scaffold delta"
-          echo "ANDROID_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          # Keep the Android-specific CMake/source-list glue and the prebuilt
+          # ARM64 recompiler archive from the scaffold. Replace same-path core
+          # implementation files with the exact JDHalfrack 1.7.4029 versions.
+          rsync -a --exclude=CMakeLists.txt --exclude=libRecompiler.a jd4029/pcsx2/ mobile/app/src/main/cpp/pcsx2/
+          rsync -a --exclude=CMakeLists.txt jd4029/common/ mobile/app/src/main/cpp/common/
 
-      - name: Forward-port Android delta to exact JDHalfrack 4029
-        run: |
-          set -euxo pipefail
-          cd core
-          git checkout -q v1.7.4029
-          if ! git cherry-pick "$ANDROID_COMMIT"; then
-            echo "CONFLICTS BEGIN"
-            git diff --name-only --diff-filter=U
-            echo "CONFLICTS END"
-            exit 20
-          fi
-          git log -2 --oneline
+          # The texture-replacement implementation must be byte-for-byte the
+          # exact 1.7.4029 source after the overlay.
+          cmp jd4029/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
+          sha256sum jd4029/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
+          grep -F 'TEXTURE_FILENAME_FORMAT_STRING' mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
+          grep -F 'TEXTURE_FILENAME_CLUT_FORMAT_STRING' mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
 
-      - name: Verify old 4029 texture naming
-        run: |
-          set -euxo pipefail
-          grep -F 'TEXTURE_FILENAME_FORMAT_STRING' core/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
-          grep -F 'TEXTURE_FILENAME_CLUT_FORMAT_STRING' core/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
-
-      - name: Install merged core in Android project
-        run: |
-          set -euxo pipefail
-          rm -rf mobile/app/src/main/cpp
-          mkdir -p mobile/app/src/main/cpp
-          rsync -a --exclude=.git core/ mobile/app/src/main/cpp/
-
-      - name: Build baseline APK
+      - name: Build exact-4029 core with Android ARM64 recompiler
         working-directory: mobile
         run: |
           set -euxo pipefail
@@ -114,12 +95,12 @@ jobs:
           mkdir -p out
           APK=$(find mobile/app/build/outputs/apk -name '*.apk' | head -n1)
           test -n "$APK"
-          cp "$APK" out/JD4029-Android-baseline.apk
-          sha256sum out/JD4029-Android-baseline.apk > out/JD4029-Android-baseline.sha256
+          cp "$APK" out/JD4029-AetherARM64-ABI-test.apk
+          sha256sum out/JD4029-AetherARM64-ABI-test.apk > out/JD4029-AetherARM64-ABI-test.sha256
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: JD4029-Android-baseline
+          name: JD4029-AetherARM64-ABI-test
           path: out/*
           if-no-files-found: error
