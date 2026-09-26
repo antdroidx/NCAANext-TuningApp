@@ -76,6 +76,16 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/IopBios.h /tmp/aether-host/IopBios.h
           cp mobile/app/src/main/cpp/pcsx2/IopBios.cpp /tmp/aether-host/IopBios.cpp
           cp -a mobile/app/src/main/cpp/pcsx2/USB /tmp/aether-host/USB
+          cp mobile/app/src/main/cpp/pcsx2/IopMem.h /tmp/aether-host/IopMem.h
+          cp mobile/app/src/main/cpp/pcsx2/IopMem.cpp /tmp/aether-host/IopMem.cpp
+          cp mobile/app/src/main/cpp/pcsx2/IopHw.h /tmp/aether-host/IopHw.h
+          cp mobile/app/src/main/cpp/pcsx2/IopHw.cpp /tmp/aether-host/IopHw.cpp
+          cp mobile/app/src/main/cpp/pcsx2/IopSio2.h /tmp/aether-host/IopSio2.h
+          cp mobile/app/src/main/cpp/pcsx2/IopSio2.cpp /tmp/aether-host/IopSio2.cpp
+          cp mobile/app/src/main/cpp/pcsx2/Sio.h /tmp/aether-host/Sio.h
+          cp mobile/app/src/main/cpp/pcsx2/Sio.cpp /tmp/aether-host/Sio.cpp
+          cp mobile/app/src/main/cpp/pcsx2/sio_internal.h /tmp/aether-host/sio_internal.h
+          cp -a mobile/app/src/main/cpp/pcsx2/DEV9 /tmp/aether-host/DEV9
           cp -a mobile/app/src/main/cpp/pcsx2/PAD/Host /tmp/aether-host/PAD-Host
           cp mobile/app/src/main/cpp/pcsx2/SaveState.h /tmp/aether-host/SaveState.h
           cp mobile/app/src/main/cpp/pcsx2/SaveState.cpp /tmp/aether-host/SaveState.cpp
@@ -184,6 +194,17 @@ jobs:
           cp /tmp/aether-host/IopBios.cpp mobile/app/src/main/cpp/pcsx2/IopBios.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/USB
           cp -a /tmp/aether-host/USB mobile/app/src/main/cpp/pcsx2/USB
+          cp /tmp/aether-host/IopMem.h mobile/app/src/main/cpp/pcsx2/IopMem.h
+          cp /tmp/aether-host/IopMem.cpp mobile/app/src/main/cpp/pcsx2/IopMem.cpp
+          cp /tmp/aether-host/IopHw.h mobile/app/src/main/cpp/pcsx2/IopHw.h
+          cp /tmp/aether-host/IopHw.cpp mobile/app/src/main/cpp/pcsx2/IopHw.cpp
+          cp /tmp/aether-host/IopSio2.h mobile/app/src/main/cpp/pcsx2/IopSio2.h
+          cp /tmp/aether-host/IopSio2.cpp mobile/app/src/main/cpp/pcsx2/IopSio2.cpp
+          cp /tmp/aether-host/Sio.h mobile/app/src/main/cpp/pcsx2/Sio.h
+          cp /tmp/aether-host/Sio.cpp mobile/app/src/main/cpp/pcsx2/Sio.cpp
+          cp /tmp/aether-host/sio_internal.h mobile/app/src/main/cpp/pcsx2/sio_internal.h
+          rm -rf mobile/app/src/main/cpp/pcsx2/DEV9
+          cp -a /tmp/aether-host/DEV9 mobile/app/src/main/cpp/pcsx2/DEV9
           rm -f mobile/app/src/main/cpp/pcsx2/VirtualMemory.h mobile/app/src/main/cpp/pcsx2/VirtualMemory.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/CDVD
           cp -a /tmp/aether-host/CDVD mobile/app/src/main/cpp/pcsx2/CDVD
