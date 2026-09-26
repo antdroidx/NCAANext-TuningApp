@@ -116,6 +116,34 @@ jobs:
           rm -rf mobile/app/src/main/cpp/pcsx2/CDVD
           cp -a /tmp/aether-host/CDVD mobile/app/src/main/cpp/pcsx2/CDVD
           cp /tmp/aether-host/Dump.cpp mobile/app/src/main/cpp/pcsx2/Dump.cpp
+
+          # The legacy dump routines are x86/debug-only and depend on old wx path and
+          # register-liveness internals. Keep their exported symbols, but stub them on
+          # the Android ARM64 build so they don't pull incompatible desktop APIs in.
+          cat > mobile/app/src/main/cpp/pcsx2/Dump.cpp <<'CPP'
+          #include "PrecompiledHeader.h"
+          #include "Dump.h"
+
+          void iDumpRegisters(u32, u32) {}
+          void iDumpPsxRegisters(u32, u32) {}
+          void iDumpVU0Registers() {}
+          void iDumpVU1Registers() {}
+          void iDumpBlock(u32, u32, uptr, u32) {}
+          void iDumpBlock(int, u8*) {}
+          void iIopDumpBlock(int, u8*) {}
+          CPP
+
+          # Aether's IsoFile.h relies on wxSeekMode being provided transitively in the
+          # original tree. After the JD4029 overlay that transitive include is gone.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/CDVD/IsoFS/IsoFile.h")
+          t = p.read_text()
+          if "#include <wx/stream.h>" not in t:
+              t = t.replace("#pragma once\n", "#pragma once\n\n#include <wx/stream.h>\n", 1)
+          p.write_text(t)
+          PY
+
           rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
 
