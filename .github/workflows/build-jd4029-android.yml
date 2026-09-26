@@ -205,6 +205,23 @@ jobs:
           cp /tmp/aether-host/sio_internal.h mobile/app/src/main/cpp/pcsx2/sio_internal.h
           rm -rf mobile/app/src/main/cpp/pcsx2/DEV9
           cp -a /tmp/aether-host/DEV9 mobile/app/src/main/cpp/pcsx2/DEV9
+
+          # Aether SIO uses wx types while JD4029's memory-card API uses std::string.
+          # Add the explicit wx date header and bridge the reindex filter at this boundary.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Sio.h")
+          s = p.read_text()
+          if "#include <wx/datetime.h>" not in s:
+              s = s.replace('#include "MemoryCardFile.h"\n',
+                            '#include "MemoryCardFile.h"\n#include "common/StringUtil.h"\n#include <wx/datetime.h>\n', 1)
+          old = "return FileMcd_ReIndex(port, slot, filter);"
+          new = "return FileMcd_ReIndex(port, slot, StringUtil::wxStringToUTF8String(filter));"
+          if old not in s:
+              raise SystemExit("Aether Sio ReIndex call not found")
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
           rm -f mobile/app/src/main/cpp/pcsx2/VirtualMemory.h mobile/app/src/main/cpp/pcsx2/VirtualMemory.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/CDVD
           cp -a /tmp/aether-host/CDVD mobile/app/src/main/cpp/pcsx2/CDVD
