@@ -86,6 +86,7 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/System.cpp /tmp/aether-host/System.cpp
           cp mobile/app/src/main/cpp/pcsx2/System/RecTypes.h /tmp/aether-host/RecTypes.h
           cp mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h /tmp/aether-host/SysForwardDefs.h
+          cp mobile/app/src/main/cpp/pcsx2/x86/newVif.h /tmp/aether-host/newVif.h
           cp -a mobile/app/src/main/cpp/pcsx2/CDVD /tmp/aether-host/CDVD
           cp mobile/app/src/main/cpp/pcsx2/Dump.cpp /tmp/aether-host/Dump.cpp
           cp -a mobile/app/src/main/cpp/pcsx2/DebugTools /tmp/aether-host/DebugTools
@@ -98,6 +99,68 @@ jobs:
           # Restore only ARM64 compatibility shims. Texture replacement remains exact 4029.
           cp /tmp/GSIntrin.android.h mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h
           cp /tmp/SingleRegisterTypes.android.h mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h
+
+          # JD4029 core code uses a larger r128 helper API than the older Aether ARM64
+          # shim exposes. Add ARM64/NEON equivalents while retaining Aether's ABI types.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h")
+          t = p.read_text()
+          marker = "template <typename u>\nstruct rhelper;"
+          if marker not in t:
+              raise SystemExit("SingleRegisterTypes rhelper marker not found")
+          if "r128_to_u128(r128 val)" not in t:
+              helpers = r'''
+#ifdef _M_ARM64
+__forceinline static void r128_store(void* ptr, r128 val)
+{
+    vst1q_u32(reinterpret_cast<u32*>(ptr), val);
+}
+
+__forceinline static void r128_store_unaligned(void* ptr, r128 val)
+{
+    vst1q_u32(reinterpret_cast<u32*>(ptr), val);
+}
+
+__forceinline static r128 r128_from_u64_dup(u64 val)
+{
+    return vreinterpretq_u32_u64(vdupq_n_u64(val));
+}
+
+__forceinline static r128 r128_from_u64_zext(u64 val)
+{
+    uint64x2_t ret = vdupq_n_u64(0);
+    ret = vsetq_lane_u64(val, ret, 0);
+    return vreinterpretq_u32_u64(ret);
+}
+
+__forceinline static r128 r128_from_u128(const u128& val)
+{
+    return vld1q_u32(&val._u32[0]);
+}
+
+__forceinline static u32 r128_to_u32(r128 val)
+{
+    return vgetq_lane_u32(val, 0);
+}
+
+__forceinline static u64 r128_to_u64(r128 val)
+{
+    return vgetq_lane_u64(vreinterpretq_u64_u32(val), 0);
+}
+
+__forceinline static u128 r128_to_u128(r128 val)
+{
+    alignas(16) u128 ret;
+    vst1q_u32(&ret._u32[0], val);
+    return ret;
+}
+#endif
+
+'''
+              t = t.replace(marker, helpers + marker, 1)
+          p.write_text(t)
+          PY
           rm -rf mobile/app/src/main/cpp/pcsx2/PAD/Host
           cp -a /tmp/aether-host/PAD-Host mobile/app/src/main/cpp/pcsx2/PAD/Host
           cp /tmp/aether-host/SaveState.h mobile/app/src/main/cpp/pcsx2/SaveState.h
@@ -112,6 +175,7 @@ jobs:
           cp /tmp/aether-host/System.cpp mobile/app/src/main/cpp/pcsx2/System.cpp
           cp /tmp/aether-host/RecTypes.h mobile/app/src/main/cpp/pcsx2/System/RecTypes.h
           cp /tmp/aether-host/SysForwardDefs.h mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h
+          cp /tmp/aether-host/newVif.h mobile/app/src/main/cpp/pcsx2/x86/newVif.h
           rm -f mobile/app/src/main/cpp/pcsx2/VirtualMemory.h mobile/app/src/main/cpp/pcsx2/VirtualMemory.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/CDVD
           cp -a /tmp/aether-host/CDVD mobile/app/src/main/cpp/pcsx2/CDVD
