@@ -204,6 +204,18 @@ jobs:
           cp /tmp/aether-host/MemoryCardFile.cpp mobile/app/src/main/cpp/pcsx2/MemoryCardFile.cpp
           cp /tmp/aether-host/MemoryCardFolder.h mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.h
           cp /tmp/aether-host/MemoryCardFolder.cpp mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.cpp
+
+          # MemoryCardFile.h references wxDirName, which is declared in common/Path.h.
+          # The original scaffold gets it transitively; make the dependency explicit
+          # after the JD4029 overlay changes include ordering.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/MemoryCardFile.h")
+          s = p.read_text()
+          if '#include "common/Path.h"' not in s:
+              s = s.replace("#pragma once\n", '#pragma once\n#include "common/Path.h"\n', 1)
+          p.write_text(s)
+          PY
           cp /tmp/aether-host/Hw.h mobile/app/src/main/cpp/pcsx2/Hw.h
           cp /tmp/aether-host/Hw.cpp mobile/app/src/main/cpp/pcsx2/Hw.cpp
           cp /tmp/aether-host/HwRead.cpp mobile/app/src/main/cpp/pcsx2/HwRead.cpp
