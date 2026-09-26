@@ -250,6 +250,14 @@ jobs:
               raise SystemExit("JD4029 Ps1CD include not found")
           s = s.replace(old, '#include "CDVD/CdRom.h"', 1)
           p.write_text(s)
+
+          # Aether's Android USB host has no USBreset() entry point and its own
+          # Hw.cpp intentionally performs no USB reset here.
+          p = Path("mobile/app/src/main/cpp/pcsx2/Hw.cpp")
+          s = p.read_text()
+          if "\tUSBreset();" in s:
+              s = s.replace("\tUSBreset();", "\t// Android USB host is reset by its plugin lifecycle.", 1)
+          p.write_text(s)
           PY
 
           # JD4029 core source expects the newer std::string common runtime, while the
