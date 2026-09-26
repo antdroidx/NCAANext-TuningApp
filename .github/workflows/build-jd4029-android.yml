@@ -73,6 +73,9 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h /tmp/GSIntrin.android.h
           cp mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h /tmp/SingleRegisterTypes.android.h
           mkdir -p /tmp/aether-host
+          cp mobile/app/src/main/cpp/pcsx2/IopBios.h /tmp/aether-host/IopBios.h
+          cp mobile/app/src/main/cpp/pcsx2/IopBios.cpp /tmp/aether-host/IopBios.cpp
+          cp -a mobile/app/src/main/cpp/pcsx2/USB /tmp/aether-host/USB
           cp -a mobile/app/src/main/cpp/pcsx2/PAD/Host /tmp/aether-host/PAD-Host
           cp mobile/app/src/main/cpp/pcsx2/SaveState.h /tmp/aether-host/SaveState.h
           cp mobile/app/src/main/cpp/pcsx2/SaveState.cpp /tmp/aether-host/SaveState.cpp
@@ -177,6 +180,10 @@ jobs:
           cp /tmp/aether-host/RecTypes.h mobile/app/src/main/cpp/pcsx2/System/RecTypes.h
           cp /tmp/aether-host/SysForwardDefs.h mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h
           cp /tmp/aether-host/newVif.h mobile/app/src/main/cpp/pcsx2/x86/newVif.h
+          cp /tmp/aether-host/IopBios.h mobile/app/src/main/cpp/pcsx2/IopBios.h
+          cp /tmp/aether-host/IopBios.cpp mobile/app/src/main/cpp/pcsx2/IopBios.cpp
+          rm -rf mobile/app/src/main/cpp/pcsx2/USB
+          cp -a /tmp/aether-host/USB mobile/app/src/main/cpp/pcsx2/USB
           rm -f mobile/app/src/main/cpp/pcsx2/VirtualMemory.h mobile/app/src/main/cpp/pcsx2/VirtualMemory.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/CDVD
           cp -a /tmp/aether-host/CDVD mobile/app/src/main/cpp/pcsx2/CDVD
@@ -211,6 +218,39 @@ jobs:
 
           rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
+
+
+          # Adapt JD4029 debug-only interfaces to the older Android host runtime.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # Aether's Breakpoints API has one global memcheck list instead of a CPU selector.
+          p = Path("mobile/app/src/main/cpp/pcsx2/Interpreter.cpp")
+          s = p.read_text()
+          old = "CBreakPoints::GetMemChecks(BREAKPOINT_EE)"
+          if old in s:
+              s = s.replace(old, "CBreakPoints::GetMemChecks()", 1)
+          p.write_text(s)
+
+          # Aether's StringUtil predates U128ToString. Format the trace value locally.
+          p = Path("mobile/app/src/main/cpp/pcsx2/ps2/eeHwTraceLog.inl")
+          s = p.read_text()
+          old = "\t\tvalStr = StringUtil::U128ToString(r128_to_u128(val));"
+          new = "\t\tconst u128 trace_u128 = r128_to_u128(val);\n\t\tvalStr = fmt::format(\"0x{:08X}.{:08X}.{:08X}.{:08X}\", trace_u128._u32[0], trace_u128._u32[1], trace_u128._u32[2], trace_u128._u32[3]);"
+          if old not in s:
+              raise SystemExit("JD4029 U128 trace formatter line not found")
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Aether renamed the PS1 CD-ROM unit from Ps1CD to CdRom; the API is equivalent.
+          p = Path("mobile/app/src/main/cpp/pcsx2/HwWrite.cpp")
+          s = p.read_text()
+          old = '#include "CDVD/Ps1CD.h"'
+          if old not in s:
+              raise SystemExit("JD4029 Ps1CD include not found")
+          s = s.replace(old, '#include "CDVD/CdRom.h"', 1)
+          p.write_text(s)
+          PY
 
           # JD4029 core source expects the newer std::string common runtime, while the
           # Android scaffold keeps the wx-based SafeArray ABI. Only the diagnostic
