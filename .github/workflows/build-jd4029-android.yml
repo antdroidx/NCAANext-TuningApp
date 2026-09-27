@@ -455,13 +455,15 @@ jobs:
           p = Path("mobile/app/src/main/cpp/common/SettingsWrapper.h")
           t = p.read_text()
           marker = "virtual void Entry(const char* section, const char* var, double& value, const double defvalue = 0.0) = 0;"
-          helper = """virtual void Entry(const char* section, const char* var, double& value, const double defvalue = 0.0) = 0;
-\tvoid Entry(const char* section, const char* var, float& value, const float defvalue = 0.0f)
-\t{
-\t\tdouble temp = static_cast<double>(value);
-\t\tEntry(section, var, temp, static_cast<double>(defvalue));
-\t\tvalue = static_cast<float>(temp);
-\t}"""
+          helper = "\n".join([
+              "virtual void Entry(const char* section, const char* var, double& value, const double defvalue = 0.0) = 0;",
+              "\tvoid Entry(const char* section, const char* var, float& value, const float defvalue = 0.0f)",
+              "\t{",
+              "\t\tdouble temp = static_cast<double>(value);",
+              "\t\tEntry(section, var, temp, static_cast<double>(defvalue));",
+              "\t\tvalue = static_cast<float>(temp);",
+              "\t}",
+          ])
           if "float& value" not in t:
               if marker not in t:
                   raise SystemExit("SettingsWrapper double Entry anchor not found")
@@ -500,11 +502,13 @@ jobs:
           end = t.find("\nbool Pcsx2Config::USBOptions::Port::operator==", start)
           if start < 0 or end < 0:
               raise SystemExit("USBOptions::LoadSave block not found")
-          usb_stub = """void Pcsx2Config::USBOptions::LoadSave(SettingsWrapper& wrap)
-{
-\t(void)wrap;
-}
-"""
+          usb_stub = "\n".join([
+              "void Pcsx2Config::USBOptions::LoadSave(SettingsWrapper& wrap)",
+              "{",
+              "\t(void)wrap;",
+              "}",
+              "",
+          ])
           t = t[:start] + usb_stub + t[end:]
 
           # MXCSR control is x86-specific. ARM64 has no SSE MXCSR state to save.
