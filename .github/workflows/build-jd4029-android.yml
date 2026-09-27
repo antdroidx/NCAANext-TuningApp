@@ -423,9 +423,44 @@ jobs:
               "}",
           ])
           t = t[:start] + replacement + t[end:]
+          # The list above intentionally uses escaped tab markers for YAML/Python safety.
+          # Convert them to real tabs before writing the generated C++.
+          t = t.replace("\\t", "\t")
 
           t = t.replace('const std::string_view name(Path::GetFileName(fd.FileName));',
                         'const std::string name(FileSystem::GetDisplayNameFromPath(fd.FileName));')
+          p.write_text(t)
+          PY
+
+          # JD4029 references CDVDcommon.h, but the Aether Android CDVD tree
+          # exposes the equivalent host-facing declarations through CDVDaccess.h.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Pcsx2Config.cpp")
+          t = p.read_text()
+          old = '#include "CDVD/CDVDcommon.h"'
+          if old not in t:
+              raise SystemExit("JD4029 CDVDcommon include not found")
+          t = t.replace(old, '#include "CDVD/CDVDaccess.h"', 1)
+          p.write_text(t)
+          PY
+
+          # Aether memRead64 writes through an output argument; JD4029's patch
+          # engine expects memRead64 to return u64. Adapt only these two reads.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Patch_Memory.cpp")
+          t = p.read_text()
+          if "u64 ledata = 0;" not in t:
+              raise SystemExit("Patch_Memory ledata anchor not found")
+          t = t.replace("u64 ledata = 0;", "u64 mem = 0;\n\tu64 ledata = 0;", 1)
+          old1 = "\t\tcase DOUBLE_T:\n\t\t\tif (memRead64(p->addr) != (u64)p->data)\n\t\t\t\tmemWrite64(p->addr, (u64)p->data);\n\t\t\tbreak;"
+          new1 = "\t\tcase DOUBLE_T:\n\t\t\tmemRead64(p->addr, mem);\n\t\t\tif (mem != (u64)p->data)\n\t\t\t\tmemWrite64(p->addr, (u64)p->data);\n\t\t\tbreak;"
+          old2 = "\t\tcase DOUBLE_LE_T:\n\t\t\tledata = SwapEndian(p->data, 64);\n\t\t\tif (memRead64(p->addr) != (u64)ledata)\n\t\t\t\tmemWrite64(p->addr, (u64)ledata);\n\t\t\tbreak;"
+          new2 = "\t\tcase DOUBLE_LE_T:\n\t\t\tledata = SwapEndian(p->data, 64);\n\t\t\tmemRead64(p->addr, mem);\n\t\t\tif (mem != (u64)ledata)\n\t\t\t\tmemWrite64(p->addr, (u64)ledata);\n\t\t\tbreak;"
+          if old1 not in t or old2 not in t:
+              raise SystemExit("JD4029 64-bit patch blocks not found")
+          t = t.replace(old1, new1, 1).replace(old2, new2, 1)
           p.write_text(t)
           PY
 
