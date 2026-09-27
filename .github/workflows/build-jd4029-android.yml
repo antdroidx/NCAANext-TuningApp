@@ -354,25 +354,86 @@ jobs:
         working-directory: src/platforms/android
         run: python3 app/src/main/cpp/3rdparty/shaderc/utils/git-sync-deps
 
-      - name: Build GitHub debug APK
+      - name: Build universal 4K + 16K APK
         working-directory: src/platforms/android
         run: |
           set -euxo pipefail
-          ./gradlew :app:assembleGithubDebug \
-            -Parmsx2.applicationId=com.armsx2.next128jd4029 \
-            -Parmsx2.versionCode=128003 \
-            -Parmsx2.versionName=2.6.1-next128-jd4029hash \
-            -Parmsx2.hostPageSize=0x1000 \
-            -Parmsx2.nativeLibName=emucore_4k \
-            --stacktrace
+
+          WORK_DIR="$PWD/app/build/next128-universal"
+          BASE_APK="$WORK_DIR/base-4k.apk"
+          APK_16K="$WORK_DIR/base-16k.apk"
+          UNSIGNED_APK="$WORK_DIR/universal-unsigned.apk"
+          ALIGNED_APK="$WORK_DIR/universal-aligned.apk"
+          LIB_STAGE="$WORK_DIR/lib-stage"
+          FINAL_APK="$PWD/../../../out/ARMSX2-NEXT128-JD4029HASH-UNIVERSAL-github-debug.apk"
+
+          rm -rf "$WORK_DIR"
+          mkdir -p "$WORK_DIR" "$LIB_STAGE/lib/arm64-v8a" "$PWD/../../../out"
+
+          build_core() {
+            local page_size="$1"
+            local lib_name="$2"
+            local out_apk="$3"
+
+            ./gradlew :app:cleanCxx
+            ./gradlew :app:assembleGithubDebug \
+              -Parmsx2.applicationId=com.armsx2.next128jd4029 \
+              -Parmsx2.versionCode=128004 \
+              -Parmsx2.versionName=2.6.1-next128-jd4029hash-universal \
+              -Parmsx2.hostPageSize="$page_size" \
+              -Parmsx2.nativeLibName="$lib_name" \
+              --stacktrace
+
+            local built_apk="$PWD/app/build/outputs/apk/github/debug/app-github-debug.apk"
+            test -f "$built_apk"
+            unzip -l "$built_apk" "lib/arm64-v8a/lib${lib_name}.so"
+            cp -f "$built_apk" "$out_apk"
+          }
+
+          echo "Building 4K core..."
+          build_core 0x1000 emucore_4k "$BASE_APK"
+
+          echo "Building 16K core..."
+          build_core 0x4000 emucore_16k "$APK_16K"
+
+          unzip -p "$BASE_APK" "lib/arm64-v8a/libemucore_4k.so" > "$LIB_STAGE/lib/arm64-v8a/libemucore_4k.so"
+          unzip -p "$APK_16K" "lib/arm64-v8a/libemucore_16k.so" > "$LIB_STAGE/lib/arm64-v8a/libemucore_16k.so"
+
+          cp -f "$BASE_APK" "$UNSIGNED_APK"
+          zip -qd "$UNSIGNED_APK" "META-INF/*" >/dev/null 2>&1 || true
+          zip -qd "$UNSIGNED_APK" "lib/arm64-v8a/libemucore_4k.so" "lib/arm64-v8a/libemucore_16k.so" >/dev/null 2>&1 || true
+          (cd "$LIB_STAGE" && zip -qr -0 "$UNSIGNED_APK" lib)
+
+          BUILD_TOOLS_DIR="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort | tail -n 1)"
+          ZIPALIGN="$BUILD_TOOLS_DIR/zipalign"
+          APKSIGNER="$BUILD_TOOLS_DIR/apksigner"
+          DEBUG_KEYSTORE="$HOME/.android/debug.keystore"
+
+          test -x "$ZIPALIGN"
+          test -x "$APKSIGNER"
+          test -f "$DEBUG_KEYSTORE"
+
+          "$ZIPALIGN" -f -P 16 4 "$UNSIGNED_APK" "$ALIGNED_APK"
+          "$APKSIGNER" sign \
+            --ks "$DEBUG_KEYSTORE" \
+            --ks-key-alias androiddebugkey \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out "$FINAL_APK" \
+            "$ALIGNED_APK"
+
+          "$APKSIGNER" verify --verbose "$FINAL_APK"
+          "$ZIPALIGN" -c -P 16 4 "$FINAL_APK"
+          unzip -l "$FINAL_APK" "lib/arm64-v8a/libemucore_4k.so"
+          unzip -l "$FINAL_APK" "lib/arm64-v8a/libemucore_16k.so"
+          sha256sum "$FINAL_APK" > "$FINAL_APK.sha256"
 
       - name: Collect APK
         run: |
           set -euxo pipefail
-          mkdir -p out
-          find src/platforms/android/app/build/outputs/apk -name '*.apk' -print
-          cp src/platforms/android/app/build/outputs/apk/github/debug/app-github-debug.apk out/ARMSX2-NEXT128-JD4029HASH-github-debug.apk
-          sha256sum out/ARMSX2-NEXT128-JD4029HASH-github-debug.apk > out/ARMSX2-NEXT128-JD4029HASH-github-debug.sha256
+          ls -lh out/
+          test -f out/ARMSX2-NEXT128-JD4029HASH-UNIVERSAL-github-debug.apk
+          test -f out/ARMSX2-NEXT128-JD4029HASH-UNIVERSAL-github-debug.apk.sha256
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
