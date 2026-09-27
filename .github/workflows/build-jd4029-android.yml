@@ -392,34 +392,36 @@ jobs:
           if end < 0:
               raise SystemExit("JD4029 LoadPatchesFromZip end marker not found")
 
-          replacement = r'''int LoadPatchesFromZip(const std::string& crc, const u8* zip_data, size_t zip_data_size)
-{
-\twxMemoryInputStream mem(zip_data, zip_data_size);
-\twxZipInputStream zip(mem);
-\tconst wxString wanted = wxString::FromUTF8((crc + ".pnach").c_str());
-
-\tstd::unique_ptr<wxZipEntry> entry;
-\twhile (entry.reset(zip.GetNextEntry()), entry.get() != nullptr)
-\t{
-\t\tif (entry->GetName().CmpNoCase(wanted) != 0)
-\t\t\tcontinue;
-
-\t\tPatchesCon->WriteLn(Color_Green, "Loading patch '%s' from archive.", crc.c_str());
-\t\twxTextInputStream text_stream(zip);
-\t\tstd::string patches;
-\t\twhile (!zip.Eof())
-\t\t{
-\t\t\tconst wxString line = text_stream.ReadLine();
-\t\t\tconst wxCharBuffer utf8 = line.ToUTF8();
-\t\t\tif (utf8.data())
-\t\t\t\tpatches.append(utf8.data());
-\t\t\tpatches.push_back('\\n');
-\t\t}
-\t\treturn LoadPatchesFromString(patches);
-\t}
-
-\treturn 0;
-}'''
+          replacement = "\n".join([
+              "int LoadPatchesFromZip(const std::string& crc, const u8* zip_data, size_t zip_data_size)",
+              "{",
+              "\\twxMemoryInputStream mem(zip_data, zip_data_size);",
+              "\\twxZipInputStream zip(mem);",
+              "\\tconst wxString wanted = wxString::FromUTF8((crc + \".pnach\").c_str());",
+              "",
+              "\\tstd::unique_ptr<wxZipEntry> entry;",
+              "\\twhile (entry.reset(zip.GetNextEntry()), entry.get() != nullptr)",
+              "\\t{",
+              "\\t\\tif (entry->GetName().CmpNoCase(wanted) != 0)",
+              "\\t\\t\\tcontinue;",
+              "",
+              "\\t\\tPatchesCon->WriteLn(Color_Green, \"Loading patch '%s' from archive.\", crc.c_str());",
+              "\\t\\twxTextInputStream text_stream(zip);",
+              "\\t\\tstd::string patches;",
+              "\\t\\twhile (!zip.Eof())",
+              "\\t\\t{",
+              "\\t\\t\\tconst wxString line = text_stream.ReadLine();",
+              "\\t\\t\\tconst wxCharBuffer utf8 = line.ToUTF8();",
+              "\\t\\t\\tif (utf8.data())",
+              "\\t\\t\\t\\tpatches.append(utf8.data());",
+              "\\t\\t\\tpatches.push_back('\\\\n');",
+              "\\t\\t}",
+              "\\t\\treturn LoadPatchesFromString(patches);",
+              "\\t}",
+              "",
+              "\\treturn 0;",
+              "}",
+          ])
           t = t[:start] + replacement + t[end:]
 
           t = t.replace('const std::string_view name(Path::GetFileName(fd.FileName));',
