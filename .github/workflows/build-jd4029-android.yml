@@ -351,6 +351,82 @@ jobs:
           p.write_text(t)
           PY
 
+          # JD4029's multipart reader uses newer Path/StringUtil helpers which the
+          # Aether Android common runtime does not expose. Map them to equivalent
+          # FileSystem helpers and perform uppercase conversion locally.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/MultipartFileReader.cpp")
+          t = p.read_text()
+          t = t.replace("Path::GetExtension(m_filename)", "FileSystem::GetExtension(m_filename)")
+          t = t.replace("Path::ReplaceExtension(filename, StringUtil::toLower(ext))",
+                        "FileSystem::ReplaceExtension(filename, StringUtil::toLower(ext))")
+          t = t.replace("Path::ReplaceExtension(filename, StringUtil::toUpper(ext))",
+                        "FileSystem::ReplaceExtension(filename, [&]() { std::string u(ext); std::transform(u.begin(), u.end(), u.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); }); return u; }())")
+          t = t.replace("Path::ReplaceExtension(m_filename, extbuf)",
+                        "FileSystem::ReplaceExtension(m_filename, extbuf)")
+          old = 'DevCon.WriteLn( Color_Blue, "isoFile: multi-part %s detected...", StringUtil::toUpper(curext).c_str() );'
+          if old in t:
+              new = 'std::string upper_curext(curext);\n\tstd::transform(upper_curext.begin(), upper_curext.end(), upper_curext.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });\n\tDevCon.WriteLn( Color_Blue, "isoFile: multi-part %s detected...", upper_curext.c_str() );'
+              t = t.replace(old, new, 1)
+          p.write_text(t)
+          PY
+
+          # JD4029 Patch.cpp expects newer ZipHelpers and std::string Path helpers.
+          # Keep the JD4029 patch API, but implement zip loading with wxWidgets
+          # (already present in the Android scaffold) and use FileSystem naming.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Patch.cpp")
+          t = p.read_text()
+          t = t.replace('#include "common/ZipHelpers.h"\n', '')
+          inc = '#include <wx/mstream.h>\n#include <wx/zipstrm.h>\n#include <wx/txtstrm.h>\n'
+          if '#include <wx/mstream.h>' not in t:
+              t = t.replace('#include <vector>\n', '#include <vector>\n' + inc, 1)
+
+          start = t.find('int LoadPatchesFromZip(const std::string& crc, const u8* zip_data, size_t zip_data_size)')
+          if start < 0:
+              raise SystemExit("JD4029 LoadPatchesFromZip not found")
+          end_marker = '\n\n\n// This routine loads patches from *.pnach files'
+          end = t.find(end_marker, start)
+          if end < 0:
+              raise SystemExit("JD4029 LoadPatchesFromZip end marker not found")
+
+          replacement = r'''int LoadPatchesFromZip(const std::string& crc, const u8* zip_data, size_t zip_data_size)
+{
+\twxMemoryInputStream mem(zip_data, zip_data_size);
+\twxZipInputStream zip(mem);
+\tconst wxString wanted = wxString::FromUTF8((crc + ".pnach").c_str());
+
+\tstd::unique_ptr<wxZipEntry> entry;
+\twhile (entry.reset(zip.GetNextEntry()), entry.get() != nullptr)
+\t{
+\t\tif (entry->GetName().CmpNoCase(wanted) != 0)
+\t\t\tcontinue;
+
+\t\tPatchesCon->WriteLn(Color_Green, "Loading patch '%s' from archive.", crc.c_str());
+\t\twxTextInputStream text_stream(zip);
+\t\tstd::string patches;
+\t\twhile (!zip.Eof())
+\t\t{
+\t\t\tconst wxString line = text_stream.ReadLine();
+\t\t\tconst wxCharBuffer utf8 = line.ToUTF8();
+\t\t\tif (utf8.data())
+\t\t\t\tpatches.append(utf8.data());
+\t\t\tpatches.push_back('\\n');
+\t\t}
+\t\treturn LoadPatchesFromString(patches);
+\t}
+
+\treturn 0;
+}'''
+          t = t[:start] + replacement + t[end:]
+
+          t = t.replace('const std::string_view name(Path::GetFileName(fd.FileName));',
+                        'const std::string name(FileSystem::GetDisplayNameFromPath(fd.FileName));')
+          p.write_text(t)
+          PY
+
           rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
 
