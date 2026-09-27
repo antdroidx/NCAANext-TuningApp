@@ -214,15 +214,18 @@ jobs:
               "static void __fastcall gsWrite64_generic_vtlb(u32 mem, const mem64_t* value) { gsWrite64_generic(mem, *value); }",
               "static void __fastcall gsWrite64_page_00_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_00(mem, *value); }",
               "static void __fastcall gsWrite64_page_01_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_01(mem, *value); }",
+              "static void __fastcall gsWrite128_generic_vtlb(u32 mem, const mem128_t* value) { gsWrite128_generic(mem, r128_from_u128(*value)); }",
+              "static void __fastcall gsWrite128_page_00_vtlb(u32 mem, const mem128_t* value) { gsWrite128_page_00(mem, r128_from_u128(*value)); }",
+              "static void __fastcall gsWrite128_page_01_vtlb(u32 mem, const mem128_t* value) { gsWrite128_page_01(mem, r128_from_u128(*value)); }",
               "",
               "",
           ])
           if "gsWrite64_generic_vtlb" not in t:
               t = t.replace(anchor, wrappers + anchor, 1)
           reps = {
-              "gsWrite64_generic, gsWrite128_generic": "gsWrite64_generic_vtlb, gsWrite128_generic",
-              "gsWrite64_page_00, gsWrite128_page_00": "gsWrite64_page_00_vtlb, gsWrite128_page_00",
-              "gsWrite64_page_01, gsWrite128_page_01": "gsWrite64_page_01_vtlb, gsWrite128_page_01",
+              "gsWrite64_generic, gsWrite128_generic": "gsWrite64_generic_vtlb, gsWrite128_generic_vtlb",
+              "gsWrite64_page_00, gsWrite128_page_00": "gsWrite64_page_00_vtlb, gsWrite128_page_00_vtlb",
+              "gsWrite64_page_01, gsWrite128_page_01": "gsWrite64_page_01_vtlb, gsWrite128_page_01_vtlb",
           }
           for old, new in reps.items():
               if old not in t:
