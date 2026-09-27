@@ -1,922 +1,388 @@
-name: Build JDHalfrack 4029 Android Port
+name: Build NEXT128 + JD4029 Hash Android APK
 
 on:
   push:
     branches:
       - main
     paths:
-      - .github/workflows/build-jd4029-android.yml
+      - '.github/workflows/build-jd4029-android.yml'
   workflow_dispatch:
 
 jobs:
-  build:
-    name: JD4029 Android ABI Test
+  build-android:
+    name: Build Android APK
     runs-on: ubuntu-24.04
     timeout-minutes: 180
 
     steps:
       - name: Set up JDK
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
 
-      - name: Install NDK and CMake
-        run: |
-          yes | sdkmanager "ndk;26.3.11579264" "cmake;3.22.1" >/dev/null || true
+      - name: Install Android NDK and CMake
+        run: yes | sdkmanager "ndk;28.2.13676358" "cmake;3.22.1" "cmake;3.31.6" >/dev/null || true
 
-      - name: Download Android scaffold
-        run: |
-          set -euxo pipefail
-          curl -L "https://github.com/pontos2024/PCSX2/archive/1f766cad23a3240c87880c1f29925005ac119ca0.zip" -o mobile.zip
-          unzip -q mobile.zip
-          mv PCSX2-1f766cad23a3240c87880c1f29925005ac119ca0 mobile
+      - name: Install Rust Android target
+        run: rustup target add aarch64-linux-android
 
-      - name: Download exact JDHalfrack 1.7.4029 source
+      - name: Download ARMSX2 source
         run: |
           set -euxo pipefail
-          git clone --filter=blob:none --depth 1 --branch v1.7.4029 https://github.com/JDHalfrack/pcsx2.git jd4029
-          git -C jd4029 rev-parse HEAD
-          git -C jd4029 describe --tags --exact-match
+          curl -L "https://github.com/SgtBilko76/ARMSX2-3D/archive/f4904cb5e3b322178e3815683e221f3ab9354d2e.zip" -o armsx2.zip
+          unzip -q armsx2.zip
+          mv ARMSX2-3D-f4904cb5e3b322178e3815683e221f3ab9354d2e src
 
-      - name: Inspect Aether ARM64 recompiler
+      - name: Apply NEXT 128MB ARM64 patch
+        working-directory: src
         run: |
           set -euxo pipefail
-          LIB=mobile/app/src/main/cpp/pcsx2/libRecompiler.a
-          test -f "$LIB"
-          mkdir -p inspect
-          file "$LIB" | tee inspect/libRecompiler-file.txt
-          nm -A -g --defined-only "$LIB" > inspect/libRecompiler-defined.txt 2>&1 || true
-          nm -A -u "$LIB" > inspect/libRecompiler-undefined.txt 2>&1 || true
-          strings -a "$LIB" > inspect/libRecompiler-strings.txt 2>&1 || true
-          grep -E ' recCpu$| psxRec$| microVU0$| microVU1$' inspect/libRecompiler-defined.txt || true
-          wc -c "$LIB"
-
-      - name: Upload recompiler inspection
-        uses: actions/upload-artifact@v4
-        with:
-          name: Aether-libRecompiler-ABI
-          path: |
-            inspect/*
-            mobile/app/src/main/cpp/pcsx2/libRecompiler.a
-          if-no-files-found: error
-
-      - name: Overlay exact 4029 core sources
-        run: |
-          set -euxo pipefail
-          # Snapshot the complete original Android/Aether PCSX2 tree.  The JD4029
-          # overlay is newer than this mobile host ABI, so compatibility-sensitive
-          # subsystems can be restored as coherent units instead of line-by-line shims.
-          rm -rf /tmp/aether-pcsx2
-          cp -a mobile/app/src/main/cpp/pcsx2 /tmp/aether-pcsx2
-
-          # Keep Android ARM64 compatibility headers before overlaying the exact core.
-          cp mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h /tmp/GSIntrin.android.h
-          cp mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h /tmp/SingleRegisterTypes.android.h
-          mkdir -p /tmp/aether-host
-          cp mobile/app/src/main/cpp/pcsx2/IopBios.h /tmp/aether-host/IopBios.h
-          cp mobile/app/src/main/cpp/pcsx2/IopBios.cpp /tmp/aether-host/IopBios.cpp
-          cp -a mobile/app/src/main/cpp/pcsx2/USB /tmp/aether-host/USB
-          cp -a mobile/app/src/main/cpp/pcsx2/SPU2 /tmp/aether-host/SPU2
-          cp mobile/app/src/main/cpp/pcsx2/ps2/eeHwTraceLog.inl /tmp/aether-host/eeHwTraceLog.inl
-          cp mobile/app/src/main/cpp/pcsx2/IopMem.h /tmp/aether-host/IopMem.h
-          cp mobile/app/src/main/cpp/pcsx2/IopMem.cpp /tmp/aether-host/IopMem.cpp
-          cp mobile/app/src/main/cpp/pcsx2/IopHw.h /tmp/aether-host/IopHw.h
-          cp mobile/app/src/main/cpp/pcsx2/IopHw.cpp /tmp/aether-host/IopHw.cpp
-          cp mobile/app/src/main/cpp/pcsx2/IopSio2.h /tmp/aether-host/IopSio2.h
-          cp mobile/app/src/main/cpp/pcsx2/IopSio2.cpp /tmp/aether-host/IopSio2.cpp
-          cp mobile/app/src/main/cpp/pcsx2/Sio.h /tmp/aether-host/Sio.h
-          cp mobile/app/src/main/cpp/pcsx2/Sio.cpp /tmp/aether-host/Sio.cpp
-          cp mobile/app/src/main/cpp/pcsx2/sio_internal.h /tmp/aether-host/sio_internal.h
-          cp -a mobile/app/src/main/cpp/pcsx2/DEV9 /tmp/aether-host/DEV9
-          cp -a mobile/app/src/main/cpp/pcsx2/PAD/Host /tmp/aether-host/PAD-Host
-          cp mobile/app/src/main/cpp/pcsx2/SaveState.h /tmp/aether-host/SaveState.h
-          cp mobile/app/src/main/cpp/pcsx2/SaveState.cpp /tmp/aether-host/SaveState.cpp
-          cp mobile/app/src/main/cpp/pcsx2/GameDatabase.h /tmp/aether-host/GameDatabase.h
-          cp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp /tmp/aether-host/GameDatabase.cpp
-          cp mobile/app/src/main/cpp/pcsx2/vtlb.h /tmp/aether-host/vtlb.h
-          cp mobile/app/src/main/cpp/pcsx2/vtlb.cpp /tmp/aether-host/vtlb.cpp
-          cp mobile/app/src/main/cpp/pcsx2/Memory.h /tmp/aether-host/Memory.h
-          cp mobile/app/src/main/cpp/pcsx2/Memory.cpp /tmp/aether-host/Memory.cpp
-          cp mobile/app/src/main/cpp/pcsx2/MemoryTypes.h /tmp/aether-host/MemoryTypes.h
-          cp mobile/app/src/main/cpp/pcsx2/IopDma.h /tmp/aether-host/IopDma.h
-          cp mobile/app/src/main/cpp/pcsx2/IopDma.cpp /tmp/aether-host/IopDma.cpp
-          cp mobile/app/src/main/cpp/pcsx2/MemoryCardFile.h /tmp/aether-host/MemoryCardFile.h
-          cp mobile/app/src/main/cpp/pcsx2/MemoryCardFile.cpp /tmp/aether-host/MemoryCardFile.cpp
-          cp mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.h /tmp/aether-host/MemoryCardFolder.h
-          cp mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.cpp /tmp/aether-host/MemoryCardFolder.cpp
-          cp mobile/app/src/main/cpp/pcsx2/Hw.h /tmp/aether-host/Hw.h
-          cp mobile/app/src/main/cpp/pcsx2/Hw.cpp /tmp/aether-host/Hw.cpp
-          cp mobile/app/src/main/cpp/pcsx2/HwRead.cpp /tmp/aether-host/HwRead.cpp
-          cp mobile/app/src/main/cpp/pcsx2/HwWrite.cpp /tmp/aether-host/HwWrite.cpp
-          cp mobile/app/src/main/cpp/pcsx2/ps2/HwInternal.h /tmp/aether-host/HwInternal.h
-          cp mobile/app/src/main/cpp/pcsx2/System.h /tmp/aether-host/System.h
-          cp mobile/app/src/main/cpp/pcsx2/System.cpp /tmp/aether-host/System.cpp
-          cp mobile/app/src/main/cpp/pcsx2/System/RecTypes.h /tmp/aether-host/RecTypes.h
-          cp mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h /tmp/aether-host/SysForwardDefs.h
-          cp mobile/app/src/main/cpp/pcsx2/x86/newVif.h /tmp/aether-host/newVif.h
-          cp -a mobile/app/src/main/cpp/pcsx2/CDVD /tmp/aether-host/CDVD
-          cp mobile/app/src/main/cpp/pcsx2/Dump.cpp /tmp/aether-host/Dump.cpp
-          cp -a mobile/app/src/main/cpp/pcsx2/DebugTools /tmp/aether-host/DebugTools
-
-          # Keep the Android-specific CMake/source-list glue and the prebuilt
-          # ARM64 recompiler archive from the scaffold. Replace same-path core
-          # implementation files with the exact JDHalfrack 1.7.4029 versions.
-          rsync -a --exclude=CMakeLists.txt --exclude=libRecompiler.a jd4029/pcsx2/ mobile/app/src/main/cpp/pcsx2/
-
-          # Restore only ARM64 compatibility shims. Texture replacement remains exact 4029.
-          cp /tmp/GSIntrin.android.h mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h
-          cp /tmp/SingleRegisterTypes.android.h mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h
-
-          # JD4029 core code uses a larger r128 helper API than the older Aether ARM64
-          # shim exposes. Add ARM64/NEON equivalents while retaining Aether's ABI types.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h")
-          t = p.read_text()
-          marker = "template <typename u>\nstruct rhelper;"
-          if marker not in t:
-              raise SystemExit("SingleRegisterTypes rhelper marker not found")
-          if "r128_to_u128(r128 val)" not in t:
-              lines = [
-                  "#ifdef _M_ARM64",
-                  "__forceinline static void r128_store(void* ptr, r128 val)",
-                  "{",
-                  "    vst1q_u32(reinterpret_cast<u32*>(ptr), val);",
-                  "}",
-                  "",
-                  "__forceinline static void r128_store_unaligned(void* ptr, r128 val)",
-                  "{",
-                  "    vst1q_u32(reinterpret_cast<u32*>(ptr), val);",
-                  "}",
-                  "",
-                  "__forceinline static r128 r128_from_u64_dup(u64 val)",
-                  "{",
-                  "    return vreinterpretq_u32_u64(vdupq_n_u64(val));",
-                  "}",
-                  "",
-                  "__forceinline static r128 r128_from_u64_zext(u64 val)",
-                  "{",
-                  "    uint64x2_t ret = vdupq_n_u64(0);",
-                  "    ret = vsetq_lane_u64(val, ret, 0);",
-                  "    return vreinterpretq_u32_u64(ret);",
-                  "}",
-                  "",
-                  "__forceinline static r128 r128_from_u128(const u128& val)",
-                  "{",
-                  "    return vld1q_u32(&val._u32[0]);",
-                  "}",
-                  "",
-                  "__forceinline static u32 r128_to_u32(r128 val)",
-                  "{",
-                  "    return vgetq_lane_u32(val, 0);",
-                  "}",
-                  "",
-                  "__forceinline static u64 r128_to_u64(r128 val)",
-                  "{",
-                  "    return vgetq_lane_u64(vreinterpretq_u64_u32(val), 0);",
-                  "}",
-                  "",
-                  "__forceinline static u128 r128_to_u128(r128 val)",
-                  "{",
-                  "    alignas(16) u128 ret;",
-                  "    vst1q_u32(&ret._u32[0], val);",
-                  "    return ret;",
-                  "}",
-                  "#endif",
-                  "",
-              ]
-              helpers = "\n".join(lines) + "\n"
-              t = t.replace(marker, helpers + marker, 1)
-          p.write_text(t)
-          PY
-          rm -rf mobile/app/src/main/cpp/pcsx2/PAD/Host
-          cp -a /tmp/aether-host/PAD-Host mobile/app/src/main/cpp/pcsx2/PAD/Host
-          cp /tmp/aether-host/SaveState.h mobile/app/src/main/cpp/pcsx2/SaveState.h
-          cp /tmp/aether-host/SaveState.cpp mobile/app/src/main/cpp/pcsx2/SaveState.cpp
-          cp /tmp/aether-host/GameDatabase.h mobile/app/src/main/cpp/pcsx2/GameDatabase.h
-          cp /tmp/aether-host/GameDatabase.cpp mobile/app/src/main/cpp/pcsx2/GameDatabase.cpp
-          cp /tmp/aether-host/vtlb.h mobile/app/src/main/cpp/pcsx2/vtlb.h
-          cp /tmp/aether-host/vtlb.cpp mobile/app/src/main/cpp/pcsx2/vtlb.cpp
-          cp /tmp/aether-host/Memory.h mobile/app/src/main/cpp/pcsx2/Memory.h
-          cp /tmp/aether-host/Memory.cpp mobile/app/src/main/cpp/pcsx2/Memory.cpp
-          cp /tmp/aether-host/MemoryTypes.h mobile/app/src/main/cpp/pcsx2/MemoryTypes.h
-
-          # Aether's vtlb ABI passes 64-bit writes by pointer, while JD4029's
-          # GS write entry points take u64 by value. Bridge only those GS handlers.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Memory.cpp")
-          t = p.read_text()
-          anchor = "typedef void __fastcall ClearFunc_t( u32 addr, u32 qwc );"
-          if anchor not in t:
-              raise SystemExit("Memory.cpp ClearFunc anchor not found")
-          wrappers = "\n".join([
-              "static void __fastcall gsWrite64_generic_vtlb(u32 mem, const mem64_t* value) { gsWrite64_generic(mem, *value); }",
-              "static void __fastcall gsWrite64_page_00_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_00(mem, *value); }",
-              "static void __fastcall gsWrite64_page_01_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_01(mem, *value); }",
-              "static void __fastcall gsWrite128_generic_vtlb(u32 mem, const mem128_t* value) { gsWrite128_generic(mem, r128_from_u128(*value)); }",
-              "static void __fastcall gsWrite128_page_00_vtlb(u32 mem, const mem128_t* value) { gsWrite128_page_00(mem, r128_from_u128(*value)); }",
-              "static void __fastcall gsWrite128_page_01_vtlb(u32 mem, const mem128_t* value) { gsWrite128_page_01(mem, r128_from_u128(*value)); }",
-              "",
-              "",
-          ])
-          if "gsWrite64_generic_vtlb" not in t:
-              t = t.replace(anchor, wrappers + anchor, 1)
-          reps = {
-              "gsWrite64_generic, gsWrite128_generic": "gsWrite64_generic_vtlb, gsWrite128_generic_vtlb",
-              "gsWrite64_page_00, gsWrite128_page_00": "gsWrite64_page_00_vtlb, gsWrite128_page_00_vtlb",
-              "gsWrite64_page_01, gsWrite128_page_01": "gsWrite64_page_01_vtlb, gsWrite128_page_01_vtlb",
-          }
-          for old, new in reps.items():
-              if old not in t:
-                  raise SystemExit(f"Memory.cpp handler pair not found: {old}")
-              t = t.replace(old, new, 1)
-          p.write_text(t)
-          PY
-          cp /tmp/aether-host/IopDma.h mobile/app/src/main/cpp/pcsx2/IopDma.h
-          cp /tmp/aether-host/IopDma.cpp mobile/app/src/main/cpp/pcsx2/IopDma.cpp
-
-          # Aether's SPU2 DMA implementation uses the older global
-          # g_iopNextEventCycle. JD4029 moved that scheduler value into psxRegs.
-          # Keep Aether's Android/SPU2 DMA behavior but bind it to the JD4029 state.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/IopDma.cpp")
-          t = p.read_text()
-          n = t.count("g_iopNextEventCycle")
-          if n != 5:
-              raise SystemExit(f"Expected 5 Aether g_iopNextEventCycle references, found {n}")
-          t = t.replace("g_iopNextEventCycle", "psxRegs.iopNextEventCycle")
-          p.write_text(t)
-          PY
-          cp /tmp/aether-host/MemoryCardFile.h mobile/app/src/main/cpp/pcsx2/MemoryCardFile.h
-          cp /tmp/aether-host/MemoryCardFile.cpp mobile/app/src/main/cpp/pcsx2/MemoryCardFile.cpp
-          cp /tmp/aether-host/MemoryCardFolder.h mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.h
-          cp /tmp/aether-host/MemoryCardFolder.cpp mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.cpp
-
-          # wxWidgets on the Android scaffold does not expose wxGetLocalTimeMillis.
-          # Use the host tick source for equivalent millisecond timestamps/timing.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.cpp")
-          t = p.read_text()
-          old = "wxGetLocalTimeMillis().GetValue()"
-          n = t.count(old)
-          if n != 3:
-              raise SystemExit(f"Expected 3 wxGetLocalTimeMillis calls, found {n}")
-          t = t.replace(old, "((GetCPUTicks() * 1000ULL) / GetTickFrequency())")
-          p.write_text(t)
-          PY
-
-          # MemoryCardFile.h references wxDirName, which is declared in common/Path.h.
-          # The original scaffold gets it transitively; make the dependency explicit
-          # after the JD4029 overlay changes include ordering.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/MemoryCardFile.h")
-          s = p.read_text()
-          if '#include "common/Path.h"' not in s:
-              s = s.replace("#pragma once\n", '#pragma once\n#include "common/Path.h"\n', 1)
-          p.write_text(s)
-          PY
-          cp /tmp/aether-host/Hw.h mobile/app/src/main/cpp/pcsx2/Hw.h
-          cp /tmp/aether-host/Hw.cpp mobile/app/src/main/cpp/pcsx2/Hw.cpp
-          cp /tmp/aether-host/HwRead.cpp mobile/app/src/main/cpp/pcsx2/HwRead.cpp
-          cp /tmp/aether-host/HwWrite.cpp mobile/app/src/main/cpp/pcsx2/HwWrite.cpp
-          cp /tmp/aether-host/HwInternal.h mobile/app/src/main/cpp/pcsx2/ps2/HwInternal.h
-          cp /tmp/aether-host/System.h mobile/app/src/main/cpp/pcsx2/System.h
-          cp /tmp/aether-host/System.cpp mobile/app/src/main/cpp/pcsx2/System.cpp
-          cp /tmp/aether-host/RecTypes.h mobile/app/src/main/cpp/pcsx2/System/RecTypes.h
-          cp /tmp/aether-host/SysForwardDefs.h mobile/app/src/main/cpp/pcsx2/SysForwardDefs.h
-          cp /tmp/aether-host/newVif.h mobile/app/src/main/cpp/pcsx2/x86/newVif.h
-          cp /tmp/aether-host/IopBios.h mobile/app/src/main/cpp/pcsx2/IopBios.h
-          cp /tmp/aether-host/IopBios.cpp mobile/app/src/main/cpp/pcsx2/IopBios.cpp
-          rm -rf mobile/app/src/main/cpp/pcsx2/USB
-          cp -a /tmp/aether-host/USB mobile/app/src/main/cpp/pcsx2/USB
-          rm -rf mobile/app/src/main/cpp/pcsx2/SPU2
-          cp -a /tmp/aether-host/SPU2 mobile/app/src/main/cpp/pcsx2/SPU2
-          cp /tmp/aether-host/eeHwTraceLog.inl mobile/app/src/main/cpp/pcsx2/ps2/eeHwTraceLog.inl
-          cp /tmp/aether-host/IopMem.h mobile/app/src/main/cpp/pcsx2/IopMem.h
-          cp /tmp/aether-host/IopMem.cpp mobile/app/src/main/cpp/pcsx2/IopMem.cpp
-          cp /tmp/aether-host/IopHw.h mobile/app/src/main/cpp/pcsx2/IopHw.h
-          cp /tmp/aether-host/IopHw.cpp mobile/app/src/main/cpp/pcsx2/IopHw.cpp
-          cp /tmp/aether-host/IopSio2.h mobile/app/src/main/cpp/pcsx2/IopSio2.h
-          cp /tmp/aether-host/IopSio2.cpp mobile/app/src/main/cpp/pcsx2/IopSio2.cpp
-          cp /tmp/aether-host/Sio.h mobile/app/src/main/cpp/pcsx2/Sio.h
-          cp /tmp/aether-host/Sio.cpp mobile/app/src/main/cpp/pcsx2/Sio.cpp
-          cp /tmp/aether-host/sio_internal.h mobile/app/src/main/cpp/pcsx2/sio_internal.h
-          rm -rf mobile/app/src/main/cpp/pcsx2/DEV9
-          cp -a /tmp/aether-host/DEV9 mobile/app/src/main/cpp/pcsx2/DEV9
-
-          # The Android SIO header relies on wxDateTime being supplied transitively in
-          # the original scaffold. Make that dependency explicit after the overlay.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Sio.h")
-          s = p.read_text()
-          if "#include <wx/datetime.h>" not in s:
-              s = s.replace('#include "MemoryCardFile.h"\n',
-                            '#include "MemoryCardFile.h"\n#include <wx/datetime.h>\n', 1)
-          p.write_text(s)
-          PY
-          rm -f mobile/app/src/main/cpp/pcsx2/VirtualMemory.h mobile/app/src/main/cpp/pcsx2/VirtualMemory.cpp
-          rm -rf mobile/app/src/main/cpp/pcsx2/CDVD
-          cp -a /tmp/aether-host/CDVD mobile/app/src/main/cpp/pcsx2/CDVD
-          cp /tmp/aether-host/Dump.cpp mobile/app/src/main/cpp/pcsx2/Dump.cpp
-
-          # The legacy dump routines are x86/debug-only and depend on old wx path and
-          # register-liveness internals. Keep their exported symbols, but stub them on
-          # the Android ARM64 build so they don't pull incompatible desktop APIs in.
-          cat > mobile/app/src/main/cpp/pcsx2/Dump.cpp <<'CPP'
-          #include "PrecompiledHeader.h"
-          #include "Dump.h"
-
-          void iDumpRegisters(u32, u32) {}
-          void iDumpPsxRegisters(u32, u32) {}
-          void iDumpVU0Registers() {}
-          void iDumpVU1Registers() {}
-          void iDumpBlock(u32, u32, uptr, u32) {}
-          void iDumpBlock(int, u8*) {}
-          void iIopDumpBlock(int, u8*) {}
-          CPP
-
-          # Aether's IsoFile.h relies on wxSeekMode being provided transitively in the
-          # original tree. After the JD4029 overlay that transitive include is gone.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/CDVD/IsoFS/IsoFile.h")
-          t = p.read_text()
-          if "#include <wx/stream.h>" not in t:
-              t = t.replace("#pragma once\n", "#pragma once\n\n#include <wx/stream.h>\n", 1)
-          p.write_text(t)
-          PY
-
-          # JD4029's multipart reader uses newer Path/StringUtil helpers which the
-          # Aether Android common runtime does not expose. Map them to equivalent
-          # FileSystem helpers and perform uppercase conversion locally.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/MultipartFileReader.cpp")
-          t = p.read_text()
-          t = t.replace("Path::GetExtension(m_filename)", "FileSystem::GetExtension(m_filename)")
-          t = t.replace("Path::ReplaceExtension(filename, StringUtil::toLower(ext))",
-                        "FileSystem::ReplaceExtension(filename, StringUtil::toLower(ext))")
-          t = t.replace("Path::ReplaceExtension(filename, StringUtil::toUpper(ext))",
-                        "FileSystem::ReplaceExtension(filename, [&]() { std::string u(ext); std::transform(u.begin(), u.end(), u.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); }); return u; }())")
-          t = t.replace("Path::ReplaceExtension(m_filename, extbuf)",
-                        "FileSystem::ReplaceExtension(m_filename, extbuf)")
-          old = 'DevCon.WriteLn( Color_Blue, "isoFile: multi-part %s detected...", StringUtil::toUpper(curext).c_str() );'
-          if old in t:
-              new = 'std::string upper_curext(curext);\n\tstd::transform(upper_curext.begin(), upper_curext.end(), upper_curext.begin(), [](unsigned char c) { return static_cast<char>(std::toupper(c)); });\n\tDevCon.WriteLn( Color_Blue, "isoFile: multi-part %s detected...", upper_curext.c_str() );'
-              t = t.replace(old, new, 1)
-          p.write_text(t)
-          PY
-
-          # JD4029 Patch.cpp expects newer ZipHelpers and std::string Path helpers.
-          # Keep the JD4029 patch API, but implement zip loading with wxWidgets
-          # (already present in the Android scaffold) and use FileSystem naming.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Patch.cpp")
-          t = p.read_text()
-          t = t.replace('#include "common/ZipHelpers.h"\n', '')
-          inc = '#include <wx/mstream.h>\n#include <wx/zipstrm.h>\n#include <wx/txtstrm.h>\n'
-          if '#include <wx/mstream.h>' not in t:
-              t = t.replace('#include <vector>\n', '#include <vector>\n' + inc, 1)
-
-          start = t.find('int LoadPatchesFromZip(const std::string& crc, const u8* zip_data, size_t zip_data_size)')
-          if start < 0:
-              raise SystemExit("JD4029 LoadPatchesFromZip not found")
-          end_marker = '\n\n\n// This routine loads patches from *.pnach files'
-          end = t.find(end_marker, start)
-          if end < 0:
-              raise SystemExit("JD4029 LoadPatchesFromZip end marker not found")
-
-          replacement = "\n".join([
-              "int LoadPatchesFromZip(const std::string& crc, const u8* zip_data, size_t zip_data_size)",
-              "{",
-              "\\twxMemoryInputStream mem(zip_data, zip_data_size);",
-              "\\twxZipInputStream zip(mem);",
-              "\\tconst wxString wanted = wxString::FromUTF8((crc + \".pnach\").c_str());",
-              "",
-              "\\tstd::unique_ptr<wxZipEntry> entry;",
-              "\\twhile (entry.reset(zip.GetNextEntry()), entry.get() != nullptr)",
-              "\\t{",
-              "\\t\\tif (entry->GetName().CmpNoCase(wanted) != 0)",
-              "\\t\\t\\tcontinue;",
-              "",
-              "\\t\\tPatchesCon->WriteLn(Color_Green, \"Loading patch '%s' from archive.\", crc.c_str());",
-              "\\t\\twxTextInputStream text_stream(zip);",
-              "\\t\\tstd::string patches;",
-              "\\t\\twhile (!zip.Eof())",
-              "\\t\\t{",
-              "\\t\\t\\tconst wxString line = text_stream.ReadLine();",
-              "\\t\\t\\tconst wxCharBuffer utf8 = line.ToUTF8();",
-              "\\t\\t\\tif (utf8.data())",
-              "\\t\\t\\t\\tpatches.append(utf8.data());",
-              "\\t\\t\\tpatches.push_back('\\\\n');",
-              "\\t\\t}",
-              "\\t\\treturn LoadPatchesFromString(patches);",
-              "\\t}",
-              "",
-              "\\treturn 0;",
-              "}",
-          ])
-          t = t[:start] + replacement + t[end:]
-          # The list above intentionally uses escaped tab markers for YAML/Python safety.
-          # Convert them to real tabs before writing the generated C++.
-          t = t.replace("\\t", "\t")
-
-          t = t.replace('const std::string_view name(Path::GetFileName(fd.FileName));',
-                        'const std::string name(FileSystem::GetDisplayNameFromPath(fd.FileName));')
-          p.write_text(t)
-          PY
-
-          # JD4029 references CDVDcommon.h, but the Aether Android CDVD tree
-          # exposes the equivalent host-facing declarations through CDVDaccess.h.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Pcsx2Config.cpp")
-          t = p.read_text()
-          old = '#include "CDVD/CDVDcommon.h"'
-          if old not in t:
-              raise SystemExit("JD4029 CDVDcommon include not found")
-          t = t.replace(old, '#include "CDVD/CDVDaccess.h"', 1)
-          p.write_text(t)
-          PY
-
-          # Bridge JD4029's newer config code to the older Android common runtime.
-          python3 - <<'PY'
+          cat > /tmp/patch_next128.py <<'PY'
           from pathlib import Path
           import re
 
-          # Old Android SettingsWrapper has no float overload. Route floats through
-          # its existing double overload so both load and save paths keep working.
-          p = Path("mobile/app/src/main/cpp/common/SettingsWrapper.h")
-          t = p.read_text()
-          marker = "virtual void Entry(const char* section, const char* var, double& value, const double defvalue = 0.0) = 0;"
-          helper = "\n".join([
-              "virtual void Entry(const char* section, const char* var, double& value, const double defvalue = 0.0) = 0;",
-              "\tvoid Entry(const char* section, const char* var, float& value, const float defvalue = 0.0f)",
-              "\t{",
-              "\t\tdouble temp = static_cast<double>(value);",
-              "\t\tEntry(section, var, temp, static_cast<double>(defvalue));",
-              "\t\tvalue = static_cast<float>(temp);",
-              "\t}",
-          ])
-          if "float& value" not in t:
-              if marker not in t:
-                  raise SystemExit("SettingsWrapper double Entry anchor not found")
-              t = t.replace(marker, helper, 1)
-          p.write_text(t)
+          def edit(path, fn):
+              p = Path(path)
+              s = p.read_text()
+              ns = fn(s)
+              if ns == s:
+                  raise SystemExit(f"No change made to {path}")
+              p.write_text(ns)
 
-          p = Path("mobile/app/src/main/cpp/pcsx2/Pcsx2Config.cpp")
-          t = p.read_text()
+          def repl(s, old, new, label):
+              if old not in s:
+                  raise SystemExit(f"Missing block for {label}")
+              return s.replace(old, new, 1)
 
-          # The Android enum-operator macro declares EnumToString() as wxChar*.
-          # Convert JD4029's two local name tables/functions to that ABI.
-          for table in ("tbl_SpeedhackNames", "tbl_GamefixNames"):
-              m = re.search(r"(const char\* const " + table + r"\[\] =\s*\{)(.*?)(\};)", t, re.S)
-              if not m:
-                  raise SystemExit(f"{table} block not found")
-              body = re.sub(r'(?<!L)"([^"\\]*(?:\\.[^"\\]*)*)"', r'L"\1"', m.group(2))
-              t = t[:m.start()] + m.group(1).replace("const char* const", "const wxChar* const") + body + m.group(3) + t[m.end():]
+          def patch_ir5900(s):
+              s = repl(s,
+                  "static u16 manual_page[Ps2MemSize::MainRam / 4096] = {};\nstatic u8 manual_counter[Ps2MemSize::MainRam / 4096] = {};",
+                  "static u16 manual_page[Ps2MemSize::TotalRam / 4096] = {};\nstatic u8 manual_counter[Ps2MemSize::TotalRam / 4096] = {};",
+                  "manual SMC arrays")
+              s = repl(s,
+                  "recLutEntries = (Ps2MemSize::MainRam + Ps2MemSize::Rom + Ps2MemSize::Rom1 + Ps2MemSize::Rom2) / 4;",
+                  "recLutEntries = (Ps2MemSize::ExposedRam + Ps2MemSize::Rom + Ps2MemSize::Rom1 + Ps2MemSize::Rom2) / 4;",
+                  "recLutEntries")
+              s = repl(s,
+                  "curpos += (Ps2MemSize::MainRam / 4);",
+                  "curpos += (Ps2MemSize::ExposedRam / 4);",
+                  "recRAM advance")
+              s = re.sub(
+                  r"\n\t// MainRam, deliberately .*?\n\tif \(recRAMCopy\.size\(\) != Ps2MemSize::MainRam\)\n\t\trecRAMCopy\.resize\(Ps2MemSize::MainRam\);",
+                  "\n\t// Keep the ARM64 snapshot/LUT span synchronized with the amount of EE RAM\n"
+                  "\t// exposed to the guest. This mirrors the x86 recompiler and is required for\n"
+                  "\t// executing blocks from the 32-128MB devkit region.\n"
+                  "\tif (recRAMCopy.size() != Ps2MemSize::ExposedRam)\n"
+                  "\t\trecRAMCopy.resize(Ps2MemSize::ExposedRam);",
+                  s,
+                  count=1,
+                  flags=re.S)
+              s = repl(s,
+                  "iopClearRecLUT(recLutReserve_RAM.data(),\n\t\tPs2MemSize::MainRam + Ps2MemSize::Rom + Ps2MemSize::Rom1 + Ps2MemSize::Rom2);",
+                  "iopClearRecLUT(recLutReserve_RAM.data(),\n\t\tPs2MemSize::ExposedRam + Ps2MemSize::Rom + Ps2MemSize::Rom1 + Ps2MemSize::Rom2);",
+                  "clear recLUT size")
+              old_map = ("\t// Map EE RAM (32MB, mirrored)\n"
+                  "\tfor (int i = 0; i < 0x200; i++)\n"
+                  "\t{\n"
+                  "\t\tu32 mask = (Ps2MemSize::MainRam / _64kb) - 1;\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x0000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x2000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x3000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x8000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xa000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xb000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xc000, i, i & mask);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xd000, i, i & mask);\n"
+                  "\t}\n")
+              new_map = ("\t// Map all exposed EE RAM (32MB retail or 128MB devkit), mirrored.\n"
+                  "\tfor (int i = 0; i < static_cast<int>(Ps2MemSize::ExposedRam / _64kb); i++)\n"
+                  "\t{\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x0000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x2000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x3000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0x8000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xa000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xb000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xc000, i, i);\n"
+                  "\t\trecLUT_SetPage(recLUT, hwLUT, recRAM, 0xd000, i, i);\n"
+                  "\t}\n")
+              s = repl(s, old_map, new_map, "EE RAM recLUT mapping")
+              s = repl(s, "if (HWADDR(pc) <= Ps2MemSize::MainRam)", "if (HWADDR(pc) <= Ps2MemSize::ExposedRam)", "overlap walk bound")
+              s = repl(s, "Ps2MemSize::MainRam - oldBlock->startpc", "Ps2MemSize::ExposedRam - oldBlock->startpc", "snapshot clamp")
+              if "Ps2MemSize::MainRam" in s:
+                  raise SystemExit("iR5900-arm64.cpp still contains Ps2MemSize::MainRam")
+              return s
+          edit("pcsx2/arm64/iR5900-arm64.cpp", patch_ir5900)
 
-          t = t.replace("const char* EnumToString(SpeedhackId id)", "const wxChar* EnumToString(SpeedhackId id)", 1)
-          t = t.replace("const char* EnumToString(GamefixId id)", "const wxChar* EnumToString(GamefixId id)", 1)
+          def patch_memory(s):
+              s = repl(s, "u32 ExposedRam = MainRam;", "u32 ExposedRam = TotalRam;", "default ExposedRam")
+              s = repl(s, "u32 ExposedIopRam = IopRam;", "u32 ExposedIopRam = TotalIopRam;", "default ExposedIopRam")
+              s = repl(s, "static bool s_extra_memory = false;", "static bool s_extra_memory = true;", "default extra memory")
+              s = re.sub(
+                  r"void memSetExtraMemMode\(bool mode\)\n\{.*?\n\ts_extra_memory = mode;",
+                  "void memSetExtraMemMode(bool mode)\n{\n\t// NEXT 27 test build: hard-enable devkit RAM even if settings contain false.\n\tmode = true;\n\ts_extra_memory = mode;",
+                  s,
+                  count=1,
+                  flags=re.S)
+              if "not supported by the ARM64 EE recompiler" in s:
+                  raise SystemExit("ARM64 extra-memory refusal guard still present")
+              return s
+          edit("pcsx2/Memory.cpp", patch_memory)
+          edit("pcsx2/Pcsx2Config.cpp", lambda s: repl(s, "ExtraMemory = false;", "ExtraMemory = true;", "CPU default ExtraMemory"))
 
-          # The old common/Path layer has wxFileName::IsAbsolute and
-          # Path::CombineStdString rather than the newer std::string helpers.
-          t = t.replace(
-              "if (!HWDumpDirectory.empty() && !Path::IsAbsolute(HWDumpDirectory))\n\t\tHWDumpDirectory = Path::Combine(EmuFolders::DataRoot, HWDumpDirectory);",
-              "if (!HWDumpDirectory.empty() && !wxFileName(StringUtil::UTF8StringToWxString(HWDumpDirectory)).IsAbsolute())\n\t\tHWDumpDirectory = Path::CombineStdString(EmuFolders::DataRoot, HWDumpDirectory);",
-              1)
-          t = t.replace(
-              "if (!SWDumpDirectory.empty() && !Path::IsAbsolute(SWDumpDirectory))\n\t\tSWDumpDirectory = Path::Combine(EmuFolders::DataRoot, SWDumpDirectory);",
-              "if (!SWDumpDirectory.empty() && !wxFileName(StringUtil::UTF8StringToWxString(SWDumpDirectory)).IsAbsolute())\n\t\tSWDumpDirectory = Path::CombineStdString(EmuFolders::DataRoot, SWDumpDirectory);",
-              1)
+          # Diagnostic build #2: keep the ARM64 EE recompiler enabled, but force
+          # all EE memory ops through VTLB softmem. This isolates the remaining
+          # 128MB problem from the 4GB ARM64 fastmem mapping/backpatch path.
+          edit("pcsx2/Config.h", lambda s: repl(
+              s,
+              "#define CHECK_FASTMEM (EmuConfig.Cpu.Recompiler.EnableEE && EmuConfig.Cpu.Recompiler.EnableFastmem)",
+              "#define CHECK_FASTMEM (false)",
+              "force EE softmem"))
+          edit("pcsx2/Pcsx2Config.cpp", lambda s: repl(
+              s, "EnableFastmem = true;", "EnableFastmem = false;", "default fastmem off"))
 
-          # Retained Aether USB is the legacy plugin and does not expose JD4029's
-          # USB namespace/configuration helpers. Its own plugin handles USB config.
-          start = t.find("void Pcsx2Config::USBOptions::LoadSave(SettingsWrapper& wrap)")
-          end = t.find("\nbool Pcsx2Config::USBOptions::Port::operator==", start)
-          if start < 0 or end < 0:
-              raise SystemExit("USBOptions::LoadSave block not found")
-          usb_stub = "\n".join([
-              "void Pcsx2Config::USBOptions::LoadSave(SettingsWrapper& wrap)",
-              "{",
-              "\t(void)wrap;",
-              "}",
-              "",
-          ])
-          t = t[:start] + usb_stub + t[end:]
-
-          # MXCSR control is x86-specific. ARM64 has no SSE MXCSR state to save.
-          for old in (
-              "\tconst SSE_MXCSR prev_mxcsr(SSE_MXCSR::GetCurrent());\n",
-              "\tSSE_MXCSR::SetCurrent(SSE_MXCSR{SYSTEM_sseMXCSR});\n",
-              "\tSSE_MXCSR::SetCurrent(prev_mxcsr);\n",
-          ):
-              if old not in t:
-                  raise SystemExit(f"Expected MXCSR line not found: {old.strip()}")
-              t = t.replace(old, "", 1)
-
-          p.write_text(t)
+          gradle = Path("platforms/android/app/build.gradle.kts")
+          txt = gradle.read_text().replace('version = "3.22.1"', 'version = "3.31.6"')
+          gradle.write_text(txt)
           PY
+          python3 /tmp/patch_next128.py
 
-          # Finish bridging the remaining JD4029 std::string path calls to the
-          # older Aether wx-based Path runtime. This clears the entire Path API
-          # mismatch class in Pcsx2Config.cpp rather than fixing one line at a time.
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p = Path("mobile/app/src/main/cpp/pcsx2/Pcsx2Config.cpp")
-          t = p.read_text()
-          replacements = [
-              (
-                  "ret = Path::Combine(EmuFolders::Bios, BaseFilenames.Bios);",
-                  "ret = Path::CombineStdString(EmuFolders::Bios, BaseFilenames.Bios);",
-              ),
-              (
-                  "return Path::Combine(EmuFolders::MemoryCards, Mcd[slot].Filename);",
-                  "return Path::CombineStdString(EmuFolders::MemoryCards, Mcd[slot].Filename);",
-              ),
-              (
-                  "if (!Path::IsAbsolute(value))\n\t\tvalue = Path::Combine(root, value);",
-                  "if (!wxFileName(StringUtil::UTF8StringToWxString(value)).IsAbsolute())\n\t\tvalue = Path::CombineStdString(root, value);",
-              ),
-              (
-                  "const std::string path(Path::Combine(Logs, name));",
-                  "const std::string path(Path::CombineStdString(Logs, name));",
-              ),
-          ]
-          for old, new in replacements:
-              if old not in t:
-                  raise SystemExit(f"Remaining Pcsx2Config path anchor not found: {old}")
-              t = t.replace(old, new, 1)
-
-          # All JD4029 Path calls in this translation unit should now be mapped
-          # to APIs actually exposed by Aether's older common/Path.h.
-          leftovers = [x for x in ("Path::IsAbsolute(", "Path::Combine(") if x in t]
-          if leftovers:
-              raise SystemExit(f"Unbridged Pcsx2Config Path APIs remain: {leftovers}")
-          p.write_text(t)
-
-          # JD4029 names the PS1 CD-ROM header Ps1CD.h; the Aether Android host
-          # carries the same cdrInterrupt/cdrReadInterrupt interface in CdRom.h.
-          # Apply this across all surviving core sources so another translation
-          # unit cannot fail on the same renamed header after R3000A.cpp.
-          root = Path("mobile/app/src/main/cpp/pcsx2")
-          count = 0
-          for src in root.rglob("*"):
-              if src.suffix not in (".cpp", ".h", ".inl"):
-                  continue
-              text = src.read_text(errors="ignore")
-              old = '#include "CDVD/Ps1CD.h"'
-              if old in text:
-                  src.write_text(text.replace(old, '#include "CDVD/CdRom.h"'))
-                  count += 1
-          print(f"Bridged Ps1CD.h include in {count} surviving source file(s)")
-          PY
-
-          # Aether memRead64 writes through an output argument; JD4029's patch
-          # engine expects memRead64 to return u64. Adapt only these two reads.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Patch_Memory.cpp")
-          t = p.read_text()
-          if "u64 ledata = 0;" not in t:
-              raise SystemExit("Patch_Memory ledata anchor not found")
-          t = t.replace("u64 ledata = 0;", "u64 mem = 0;\n\tu64 ledata = 0;", 1)
-          old1 = "\t\tcase DOUBLE_T:\n\t\t\tif (memRead64(p->addr) != (u64)p->data)\n\t\t\t\tmemWrite64(p->addr, (u64)p->data);\n\t\t\tbreak;"
-          new1 = "\t\tcase DOUBLE_T:\n\t\t\tmemRead64(p->addr, mem);\n\t\t\tif (mem != (u64)p->data)\n\t\t\t\tmemWrite64(p->addr, (u64)p->data);\n\t\t\tbreak;"
-          old2 = "\t\tcase DOUBLE_LE_T:\n\t\t\tledata = SwapEndian(p->data, 64);\n\t\t\tif (memRead64(p->addr) != (u64)ledata)\n\t\t\t\tmemWrite64(p->addr, (u64)ledata);\n\t\t\tbreak;"
-          new2 = "\t\tcase DOUBLE_LE_T:\n\t\t\tledata = SwapEndian(p->data, 64);\n\t\t\tmemRead64(p->addr, mem);\n\t\t\tif (mem != (u64)ledata)\n\t\t\t\tmemWrite64(p->addr, (u64)ledata);\n\t\t\tbreak;"
-          if old1 not in t or old2 not in t:
-              raise SystemExit("JD4029 64-bit patch blocks not found")
-          t = t.replace(old1, new1, 1).replace(old2, new2, 1)
-          p.write_text(t)
-          PY
-
-          rm -rf mobile/app/src/main/cpp/pcsx2/DebugTools
-          cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
+          grep -n "Ps2MemSize::MainRam" pcsx2/arm64/iR5900-arm64.cpp && exit 1 || true
+          grep -n "not supported by the ARM64 EE recompiler" pcsx2/Memory.cpp && exit 1 || true
 
 
-          # Adapt JD4029/debug host interfaces to the older Android common runtime.
-          python3 - <<'PY'
-          from pathlib import Path
-
-          # Thread names are diagnostic only. The Android common headers in this
-          # scaffold do not expose SetNameOfCurrentThread at these call sites.
-          for fn in ("MTGS.cpp", "MTVU.cpp"):
-              p = Path("mobile/app/src/main/cpp/pcsx2") / fn
-              t = p.read_text()
-              t = t.replace('Threading::SetNameOfCurrentThread("GS");', '/* Android host: GS thread name omitted. */')
-              t = t.replace('Threading::SetNameOfCurrentThread("MTVU");', '/* Android host: MTVU thread name omitted. */')
-              p.write_text(t)
-
-          # Aether's Breakpoints API has one global memcheck list instead of a CPU selector.
-          p = Path("mobile/app/src/main/cpp/pcsx2/Interpreter.cpp")
-          s = p.read_text()
-          old = "CBreakPoints::GetMemChecks(BREAKPOINT_EE)"
-          if old in s:
-              s = s.replace(old, "CBreakPoints::GetMemChecks()", 1)
-          p.write_text(s)
-
-          # Hardware trace logging is restored from the Android scaffold alongside
-          # Hw.cpp/HwRead.cpp/HwWrite.cpp, so no JD4029 StringUtil bridge is required.
-
-          # If a JD4029 hardware source survives the Android host restore, map its
-          # PS1 CD-ROM include to Aether's equivalent name.
-          p = Path("mobile/app/src/main/cpp/pcsx2/HwWrite.cpp")
-          s = p.read_text()
-          old = '#include "CDVD/Ps1CD.h"'
-          if old in s:
-              s = s.replace(old, '#include "CDVD/CdRom.h"', 1)
-          p.write_text(s)
-
-          # Aether's Android USB host has no USBreset() entry point and its own
-          # Hw.cpp intentionally performs no USB reset here.
-          p = Path("mobile/app/src/main/cpp/pcsx2/Hw.cpp")
-          s = p.read_text()
-          if "\tUSBreset();" in s:
-              s = s.replace("\tUSBreset();", "\t// Android USB host is reset by its plugin lifecycle.", 1)
-          p.write_text(s)
-          PY
-
-          # JD4029 core source expects the newer std::string common runtime, while the
-          # Android scaffold keeps the wx-based SafeArray ABI. Only the diagnostic
-          # label type differs here.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Elfheader.cpp")
-          t = p.read_text()
-          t = t.replace('data(isofile.getLength(), "ELF headers")', 'data(isofile.getLength(), L"ELF headers")')
-          t = t.replace('data(hdrsize, "ELF headers")', 'data(hdrsize, L"ELF headers")')
-          p.write_text(t)
-          PY
-
-          # Clang/Android rejects implicit char -> signed-byte narrowing in this
-          # constexpr initializer. Aether carries the same constructor with explicit
-          # casts; apply that syntax-only fix to the JD4029 GS vector source.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/GS/GSVector4i.h")
-          t = p.read_text()
-          old = ': I8{b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15}'
-          new = ': I8{(s8)b0, (s8)b1, (s8)b2, (s8)b3, (s8)b4, (s8)b5, (s8)b6, (s8)b7, (s8)b8, (s8)b9, (s8)b10, (s8)b11, (s8)b12, (s8)b13, (s8)b14, (s8)b15}'
-          if old not in t:
-              raise SystemExit("JD4029 GSVector4i byte constructor not found")
-          t = t.replace(old, new, 1)
-          p.write_text(t)
-          PY
-
-          # Aether's Android PAD host polls devices at guest vsync. JD4029 calls
-          # PAD::Update() at the same frame boundary, so provide a compatibility alias.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/PAD/Host/PAD.h")
-          s = p.read_text()
-          needle = '\tvoid PollDevices();'
-          repl = '\tvoid PollDevices();\n\tinline void Update() { PollDevices(); }'
-          if needle not in s:
-              raise SystemExit("Aether PAD PollDevices declaration not found")
-          if 'inline void Update()' not in s:
-              s = s.replace(needle, repl, 1)
-          p.write_text(s)
-          PY
-
-          # Aether/Android polls input devices from VMManager. JD4029's PAD::Update()
-          # belongs to the newer desktop PAD API and is not present in this Android host.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Counters.cpp")
-          s = p.read_text()
-          s = s.replace("\tPAD::Update();", "\t// Android host polls PAD devices in VMManager.")
-          p.write_text(s)
-          PY
-
-          # JD4029's newer SPU2 API can adjust the device sample-rate multiplier.
-          # The Aether Android SPU2 host retained above predates that namespace/API;
-          # its own Counters.cpp intentionally leaves these three calls disabled.
-          # Match the Android host behavior while keeping JD4029's timing logic.
-          python3 - <<'PY'
-          from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/Counters.cpp")
-          s = p.read_text()
-          calls = [
-              "SPU2::SetDeviceSampleRateMultiplier(1.0);",
-              "SPU2::SetDeviceSampleRateMultiplier(ratio);",
-          ]
-          found = sum(s.count(x) for x in calls)
-          if found != 3:
-              raise SystemExit(f"Expected 3 JD4029 SPU2 sample-rate calls, found {found}")
-          s = s.replace("SPU2::SetDeviceSampleRateMultiplier(1.0);",
-                        "/* Aether Android SPU2 has no sample-rate multiplier API. */")
-          s = s.replace("SPU2::SetDeviceSampleRateMultiplier(ratio);",
-                        "/* Aether Android SPU2 has no sample-rate multiplier API. */")
-          p.write_text(s)
-          PY
-          # Keep the Android/Aether common runtime. Exact 4029 common is desktop-oriented
-          # and breaks the mobile host ABI (Threading/EventSource/etc.). The emulation
-          # core and GS/texture code remain exact 4029.
-
-          # Re-establish a coherent Android/Aether ABI island around the JD4029 GS/HW
-          # texture-replacement code. Build #40 showed that these host/runtime pieces
-          # fail in clusters when paired with newer desktop interfaces; restoring the
-          # scaffold versions removes whole mismatch classes at once.
-          python3 - <<'PY'
-          from pathlib import Path
-          import shutil
-
-          src = Path("/tmp/aether-pcsx2")
-          dst = Path("mobile/app/src/main/cpp/pcsx2")
-
-          files = [
-              # Configuration/host ABI used directly by native-lib.cpp and plugins.
-              "Config.h",
-              "Pcsx2Config.cpp",
-              "Host.h",
-              "HostSettings.cpp",
-              "HostSettings.h",
-              "INISettingsInterface.cpp",
-              "INISettingsInterface.h",
-              "VMManager.cpp",
-              "VMManager.h",
-
-              # CPU/IOP interfaces must agree with the prebuilt ARM64 recompiler and
-              # the retained Aether memory/SIO/CDVD implementations.
-              "R3000A.cpp",
-              "R3000A.h",
-              "R3000AInterpreter.cpp",
-              "R5900.cpp",
-              "R5900.h",
-              "R5900OpcodeImpl.cpp",
-              "Counters.cpp",
-              "Counters.h",
-              "VU0microInterp.cpp",
-              "VU1microInterp.cpp",
-              "VUmicroMem.cpp",
-              "VUmicroMem.h",
-
-              # Older common/runtime ABI helpers used throughout the Android scaffold.
-              "ShiftJisToUnicode.cpp",
-              "ShiftJisToUnicode.h",
-              "SourceLog.cpp",
-              "SourceLog.h",
-              "Elfheader.cpp",
-              "Elfheader.h",
-              "VirtualMemory.cpp",
-              "VirtualMemory.h",
-
-              # Device abstraction: use the scaffold implementation; JD4029 HW
-              # texture replacement remains below this layer.
-              "GS/Renderers/Common/GSDevice.cpp",
-              "GS/Renderers/Common/GSDevice.h",
-          ]
-
-          dirs = [
-              # These trees are platform/ABI glue, not the JD4029 texture hash path.
-              "Frontend",
-              "ps2/Iop",
-              "Utilities",
-              "GS/Renderers/SW",
-              "GS/Renderers/OpenGL",
-              "GS/Renderers/Vulkan",
-          ]
-
-          restored = []
-          for rel in files:
-              a = src / rel
-              b = dst / rel
-              if not a.exists():
-                  continue
-              b.parent.mkdir(parents=True, exist_ok=True)
-              if b.exists() and b.is_dir():
-                  shutil.rmtree(b)
-              shutil.copy2(a, b)
-              restored.append(rel)
-
-          for rel in dirs:
-              a = src / rel
-              b = dst / rel
-              if not a.exists():
-                  continue
-              if b.exists():
-                  shutil.rmtree(b)
-              shutil.copytree(a, b)
-              restored.append(rel + "/")
-
-          print("Restored Aether compatibility island:")
-          for rel in restored:
-              print("  ", rel)
-
-          # Guardrails: these are the JD4029 files we intentionally preserve.
-          keep_jd = [
-              "GS/Renderers/HW/GSTextureReplacements.cpp",
-              "GS/Renderers/HW/GSTextureReplacements.h",
-              "GS/Renderers/HW/GSTextureReplacementLoaders.cpp",
-              "GS/Renderers/HW/GSTextureReplacementLoaders.h",
-              "GS/Renderers/HW/GSTextureCache.cpp",
-              "GS/Renderers/HW/GSTextureCache.h",
-              "GS/Renderers/HW/GSRendererHW.cpp",
-              "GS/Renderers/HW/GSRendererHW.h",
-          ]
-          for rel in keep_jd:
-              jd = Path("jd4029/pcsx2") / rel
-              out = dst / rel
-              if jd.exists():
-                  out.parent.mkdir(parents=True, exist_ok=True)
-                  shutil.copy2(jd, out)
-          PY
-
-          # The texture-replacement implementation must be byte-for-byte the
-          # exact 1.7.4029 source after the overlay.
-          cmp jd4029/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
-          sha256sum jd4029/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
-          grep -F 'TEXTURE_FILENAME_FORMAT_STRING' mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
-          grep -F 'TEXTURE_FILENAME_CLUT_FORMAT_STRING' mobile/app/src/main/cpp/pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
-
-      - name: Patch 4029 architecture gate for ARM64
+      - name: Apply JD4029 texture hash compatibility
+        working-directory: src
         run: |
           set -euxo pipefail
-          python3 - <<'PY'
+          cat > /tmp/patch_jd4029_hash.py <<'PY'
           from pathlib import Path
-          p = Path("mobile/app/src/main/cpp/pcsx2/PCSX2Base.h")
-          s = p.read_text()
-          if "defined(_M_ARM64)" not in s and "defined(__aarch64__)" not in s:
-              needle = "#if defined(__AVX2__)"
-              if needle not in s:
-                  raise SystemExit("PCSX2Base AVX2 architecture gate not found")
-              repl = "#if defined(_M_ARM64) || defined(__aarch64__)" + chr(10) + chr(9) + "#define _M_SSE 0x401" + chr(10) + "#elif defined(__AVX2__)"
-              s = s.replace(needle, repl, 1)
-              p.write_text(s)
+
+          def replace_function(src, signature, replacement):
+              start = src.find(signature)
+              if start < 0:
+                  raise SystemExit(f"Missing function signature: {signature}")
+              brace = src.find("{", start)
+              if brace < 0:
+                  raise SystemExit(f"Missing opening brace: {signature}")
+              depth = 0
+              end = None
+              for i in range(brace, len(src)):
+                  ch = src[i]
+                  if ch == "{":
+                      depth += 1
+                  elif ch == "}":
+                      depth -= 1
+                      if depth == 0:
+                          end = i + 1
+                          break
+              if end is None:
+                  raise SystemExit(f"Unbalanced function: {signature}")
+              return src[:start] + replacement + src[end:]
+
+          tc_path = Path("pcsx2/GS/Renderers/HW/GSTextureCache.cpp")
+          tc = tc_path.read_text()
+
+          tc = replace_function(
+              tc,
+              "GSTextureCache::SourceRegion GSTextureCache::SourceRegion::Create(GIFRegTEX0 TEX0, GIFRegCLAMP CLAMP)",
+              r'''GSTextureCache::SourceRegion GSTextureCache::SourceRegion::Create(GIFRegTEX0 TEX0, GIFRegCLAMP CLAMP)
+          {
+              // JDHalfrack 1.7.4029 predates region-texture hashing. Disable the
+              // newer region optimization so replacement keys describe the full texture.
+              (void)TEX0;
+              (void)CLAMP;
+              return {};
+          }''')
+
+          tc = replace_function(
+              tc,
+              "static void HashTextureLevel(const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, GSTextureCache::SourceRegion region, BlockHashState& hash_st, u8* temp)",
+              r'''static void HashTextureLevel(const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, GSTextureCache::SourceRegion region, BlockHashState& hash_st, u8* temp)
+          {
+              // Exact JDHalfrack v1.7.4029 hashing behavior, adapted only for the
+              // modern SourceRegion argument and GS_BLOCK_SIZE constant.
+              (void)region;
+              const GSLocalMemory::psm_t& psm = GSLocalMemory::m_psm[TEX0.PSM];
+              const GSVector2i& bs = psm.bs;
+              const int tw = 1 << TEX0.TW;
+              const int th = 1 << TEX0.TH;
+
+              const GSVector4i rect(0, 0, tw, th);
+              const GSVector4i block_rect(rect.ralign<Align_Outside>(bs));
+              GSLocalMemory& mem = g_gs_renderer->m_mem;
+              const GSOffset off = mem.GetOffset(TEX0.TBP0, TEX0.TBW, TEX0.PSM);
+
+              if (tw < bs.x || th < bs.y || psm.fmsk != 0xFFFFFFFFu)
+              {
+                  const u32 pitch = Common::AlignUpPow2(static_cast<u32>(block_rect.z), 32);
+                  const u32 row_size = static_cast<u32>(tw);
+                  const GSLocalMemory::readTexture rtx = psm.rtxP;
+
+                  rtx(mem, off, block_rect, temp, pitch, TEXA);
+
+                  u8* ptr = temp;
+                  if (pitch == row_size)
+                  {
+                      BlockHashAccumulate(hash_st, ptr, pitch * static_cast<u32>(th));
+                  }
+                  else
+                  {
+                      for (int y = 0; y < th; y++, ptr += pitch)
+                          BlockHashAccumulate(hash_st, ptr, row_size);
+                  }
+              }
+              else
+              {
+                  // 1.7.4029 intentionally resets here before hashing raw GS blocks.
+                  BlockHashReset(hash_st);
+
+                  GSOffset::BNHelper bn = off.bnMulti(block_rect.left, block_rect.top);
+                  const int right = block_rect.right >> off.blockShiftX();
+                  const int bottom = block_rect.bottom >> off.blockShiftY();
+                  const int xAdd = (1 << off.blockShiftX()) * (psm.bpp / 8);
+
+                  for (; bn.blkY() < bottom; bn.nextBlockY())
+                  {
+                      for (int x = 0; bn.blkX() < right; bn.nextBlockX(), x += xAdd)
+                      {
+                          BlockHashAccumulate(hash_st, mem.BlockPtr(bn.value()));
+                      }
+                  }
+              }
+          }''')
+
+          tc = replace_function(
+              tc,
+              "GSTextureCache::HashCacheKey GSTextureCache::HashCacheKey::Create(const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, const u32* clut, const GSVector2i* lod, SourceRegion region)",
+              r'''GSTextureCache::HashCacheKey GSTextureCache::HashCacheKey::Create(const GIFRegTEX0& TEX0, const GIFRegTEXA& TEXA, const u32* clut, const GSVector2i* lod, SourceRegion region)
+          {
+              const GSLocalMemory::psm_t& psm = GSLocalMemory::m_psm[TEX0.PSM];
+              (void)region;
+
+              HashCacheKey ret;
+              // JD4029 includes TEX0.TCC in the serialized texture key.
+              ret.TEX0.U64 = TEX0.U64 & 0x00000007FFF00000ULL;
+              ret.TEXA.U64 = (psm.pal == 0 && psm.fmt > 0) ? (TEXA.U64 & 0x000000FF000080FFULL) : 0;
+              ret.CLUTHash = clut ? GSTextureCache::PaletteKeyHash{}({clut, psm.pal}) : 0;
+              ret.region_width = 0;
+              ret.region_height = 0;
+
+              BlockHashState hash_st;
+              BlockHashReset(hash_st);
+
+              HashTextureLevel(TEX0, TEXA, {}, hash_st, s_unswizzle_buffer);
+
+              if (lod)
+              {
+                  const int basemip = lod->x;
+                  const int nmips = lod->y - lod->x + 1;
+                  for (int i = 1; i < nmips; i++)
+                  {
+                      const GIFRegTEX0 MIP_TEX0{g_gs_renderer->GetTex0Layer(basemip + i)};
+                      HashTextureLevel(MIP_TEX0, TEXA, {}, hash_st, s_unswizzle_buffer);
+                  }
+              }
+
+              ret.TEX0Hash = FinishBlockHash(hash_st);
+              return ret;
+          }''')
+
+          tc_path.write_text(tc)
+
+          tr_path = Path("pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp")
+          tr = tr_path.read_text()
+
+          old = "u32 unused0 : 1; // was TCC"
+          if old not in tr:
+              raise SystemExit("TextureName legacy bit field not found")
+          tr = tr.replace(old, "u32 TEX0_TCC : 1; // JD4029 compatibility", 1)
+
+          old = '''__fi void RemoveUnusedBits()
+              {
+                  // Remove bits which were previously present, but no longer used.
+                  unused0 = 0;
+              }'''
+          new = '''__fi void RemoveUnusedBits()
+              {
+                  // Compatibility build: this bit is TEX0.TCC in JDHalfrack 1.7.4029
+                  // replacement filenames, so preserve it when parsing legacy packs.
+              }'''
+          if old not in tr:
+              raise SystemExit("RemoveUnusedBits block not found")
+          tr = tr.replace(old, new, 1)
+
+          old = "name.TEX0_TH = hash.TEX0.TH;\n"
+          if old not in tr:
+              raise SystemExit("CreateTextureName TH assignment not found")
+          tr = tr.replace(old, old + "\tname.TEX0_TCC = hash.TEX0.TCC;\n", 1)
+
+          old = "key.TEX0.TH = tn.TEX0_TH;\n"
+          if old not in tr:
+              raise SystemExit("HashCacheKeyFromTextureName TH assignment not found")
+          tr = tr.replace(old, old + "\tkey.TEX0.TCC = tn.TEX0_TCC;\n", 1)
+
+          tr_path.write_text(tr)
+
+          # Guardrails: fail before compiling if any compatibility marker is missing.
+          checks = {
+              tc_path: [
+                  "0x00000007FFF00000ULL",
+                  "const GSLocalMemory::readTexture rtx = psm.rtxP;",
+                  "return {};",
+              ],
+              tr_path: [
+                  "u32 TEX0_TCC : 1; // JD4029 compatibility",
+                  "name.TEX0_TCC = hash.TEX0.TCC;",
+                  "key.TEX0.TCC = tn.TEX0_TCC;",
+              ],
+          }
+          for path, needles in checks.items():
+              data = path.read_text()
+              for needle in needles:
+                  if needle not in data:
+                      raise SystemExit(f"Missing JD4029 compatibility marker in {path}: {needle}")
+
+          print("Applied JDHalfrack v1.7.4029 texture-hash compatibility")
           PY
-          grep -n -A12 '^#if defined(_M_ARM64)' mobile/app/src/main/cpp/pcsx2/PCSX2Base.h
-          head -n 30 mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h
+          python3 /tmp/patch_jd4029_hash.py
 
-      - name: Build exact-4029 core with Android ARM64 recompiler
-        working-directory: mobile
+          grep -n "JD4029 compatibility" pcsx2/GS/Renderers/HW/GSTextureReplacements.cpp
+          grep -n "0x00000007FFF00000ULL" pcsx2/GS/Renderers/HW/GSTextureCache.cpp
+
+      - name: Fetch shaderc third-party deps
+        working-directory: src/platforms/android
+        run: python3 app/src/main/cpp/3rdparty/shaderc/utils/git-sync-deps
+
+      - name: Build GitHub debug APK
+        working-directory: src/platforms/android
         run: |
-          set -uxo pipefail
-          chmod +x gradlew
-
-          # Clang normally stops after 20 diagnostics in one translation unit.
-          # Remove that cap so a failing file exposes every error it can in one pass.
-          export CXXFLAGS="${CXXFLAGS:-} -ferror-limit=0"
-
-          # Let Gradle configure and attempt the normal APK build first.
-          set +e
-          ./gradlew :app:assembleDebug --stacktrace
-          GRADLE_RC=$?
-          set -e
-
-          # If native compilation failed, rerun every generated ARM64 Ninja graph
-          # with -k 0 (keep going indefinitely). This compiles past independent
-          # failures and gives us a much larger batch of diagnostics per workflow.
-          if [ "$GRADLE_RC" -ne 0 ]; then
-            echo "::group::Full ARM64 native compile sweep"
-            NINJA="$ANDROID_HOME/cmake/3.22.1/bin/ninja"
-            if [ ! -x "$NINJA" ]; then
-              NINJA="$(command -v ninja || true)"
-            fi
-
-            if [ -n "$NINJA" ]; then
-              FOUND=0
-              while IFS= read -r BUILD_NINJA; do
-                FOUND=1
-                BUILD_DIR="$(dirname "$BUILD_NINJA")"
-                echo "Sweeping native build graph: $BUILD_DIR"
-                "$NINJA" -C "$BUILD_DIR" -k 0 || true
-              done < <(find app/.cxx -type f -name build.ninja -path '*arm64-v8a*' -print)
-              if [ "$FOUND" -eq 0 ]; then
-                echo "No generated ARM64 build.ninja found for diagnostic sweep."
-              fi
-            else
-              echo "Ninja executable not found; skipping diagnostic keep-going sweep."
-            fi
-            echo "::endgroup::"
-            exit "$GRADLE_RC"
-          fi
+          set -euxo pipefail
+          ./gradlew :app:assembleGithubDebug \
+            -Parmsx2.applicationId=com.armsx2.next128jd4029 \
+            -Parmsx2.versionCode=128003 \
+            -Parmsx2.versionName=2.6.1-next128-jd4029hash \
+            -Parmsx2.hostPageSize=0x1000 \
+            -Parmsx2.nativeLibName=emucore_4k \
+            --stacktrace
 
       - name: Collect APK
         run: |
           set -euxo pipefail
           mkdir -p out
-          APK=$(find mobile/app/build/outputs/apk -name '*.apk' | head -n1)
-          test -n "$APK"
-          cp "$APK" out/JD4029-AetherARM64-ABI-test.apk
-          sha256sum out/JD4029-AetherARM64-ABI-test.apk > out/JD4029-AetherARM64-ABI-test.sha256
+          find src/platforms/android/app/build/outputs/apk -name '*.apk' -print
+          cp src/platforms/android/app/build/outputs/apk/github/debug/app-github-debug.apk out/ARMSX2-NEXT128-JD4029HASH-github-debug.apk
+          sha256sum out/ARMSX2-NEXT128-JD4029HASH-github-debug.apk > out/ARMSX2-NEXT128-JD4029HASH-github-debug.sha256
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: JD4029-AetherARM64-ABI-test
+          name: ARMSX2-NEXT128-JD4029HASH-test-apk
           path: out/*
           if-no-files-found: error
