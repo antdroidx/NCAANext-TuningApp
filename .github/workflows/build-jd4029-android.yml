@@ -69,6 +69,12 @@ jobs:
       - name: Overlay exact 4029 core sources
         run: |
           set -euxo pipefail
+          # Snapshot the complete original Android/Aether PCSX2 tree.  The JD4029
+          # overlay is newer than this mobile host ABI, so compatibility-sensitive
+          # subsystems can be restored as coherent units instead of line-by-line shims.
+          rm -rf /tmp/aether-pcsx2
+          cp -a mobile/app/src/main/cpp/pcsx2 /tmp/aether-pcsx2
+
           # Keep Android ARM64 compatibility headers before overlaying the exact core.
           cp mobile/app/src/main/cpp/pcsx2/GS/GSIntrin.h /tmp/GSIntrin.android.h
           cp mobile/app/src/main/cpp/pcsx2/SingleRegisterTypes.h /tmp/SingleRegisterTypes.android.h
@@ -720,6 +726,115 @@ jobs:
           # Keep the Android/Aether common runtime. Exact 4029 common is desktop-oriented
           # and breaks the mobile host ABI (Threading/EventSource/etc.). The emulation
           # core and GS/texture code remain exact 4029.
+
+          # Re-establish a coherent Android/Aether ABI island around the JD4029 GS/HW
+          # texture-replacement code. Build #40 showed that these host/runtime pieces
+          # fail in clusters when paired with newer desktop interfaces; restoring the
+          # scaffold versions removes whole mismatch classes at once.
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          src = Path("/tmp/aether-pcsx2")
+          dst = Path("mobile/app/src/main/cpp/pcsx2")
+
+          files = [
+              # Configuration/host ABI used directly by native-lib.cpp and plugins.
+              "Config.h",
+              "Pcsx2Config.cpp",
+              "Host.h",
+              "HostSettings.cpp",
+              "HostSettings.h",
+              "INISettingsInterface.cpp",
+              "INISettingsInterface.h",
+              "VMManager.cpp",
+              "VMManager.h",
+
+              # CPU/IOP interfaces must agree with the prebuilt ARM64 recompiler and
+              # the retained Aether memory/SIO/CDVD implementations.
+              "R3000A.cpp",
+              "R3000A.h",
+              "R3000AInterpreter.cpp",
+              "R5900.cpp",
+              "R5900.h",
+              "R5900OpcodeImpl.cpp",
+              "Counters.cpp",
+              "Counters.h",
+              "VU0microInterp.cpp",
+              "VU1microInterp.cpp",
+              "VUmicroMem.cpp",
+              "VUmicroMem.h",
+
+              # Older common/runtime ABI helpers used throughout the Android scaffold.
+              "ShiftJisToUnicode.cpp",
+              "ShiftJisToUnicode.h",
+              "SourceLog.cpp",
+              "SourceLog.h",
+              "Elfheader.cpp",
+              "Elfheader.h",
+              "VirtualMemory.cpp",
+              "VirtualMemory.h",
+
+              # Device abstraction: use the scaffold implementation; JD4029 HW
+              # texture replacement remains below this layer.
+              "GS/Renderers/Common/GSDevice.cpp",
+              "GS/Renderers/Common/GSDevice.h",
+          ]
+
+          dirs = [
+              # These trees are platform/ABI glue, not the JD4029 texture hash path.
+              "Frontend",
+              "ps2/Iop",
+              "Utilities",
+              "GS/Renderers/SW",
+              "GS/Renderers/OpenGL",
+              "GS/Renderers/Vulkan",
+          ]
+
+          restored = []
+          for rel in files:
+              a = src / rel
+              b = dst / rel
+              if not a.exists():
+                  continue
+              b.parent.mkdir(parents=True, exist_ok=True)
+              if b.exists() and b.is_dir():
+                  shutil.rmtree(b)
+              shutil.copy2(a, b)
+              restored.append(rel)
+
+          for rel in dirs:
+              a = src / rel
+              b = dst / rel
+              if not a.exists():
+                  continue
+              if b.exists():
+                  shutil.rmtree(b)
+              shutil.copytree(a, b)
+              restored.append(rel + "/")
+
+          print("Restored Aether compatibility island:")
+          for rel in restored:
+              print("  ", rel)
+
+          # Guardrails: these are the JD4029 files we intentionally preserve.
+          keep_jd = [
+              "GS/Renderers/HW/GSTextureReplacements.cpp",
+              "GS/Renderers/HW/GSTextureReplacements.h",
+              "GS/Renderers/HW/GSTextureReplacementLoaders.cpp",
+              "GS/Renderers/HW/GSTextureReplacementLoaders.h",
+              "GS/Renderers/HW/GSTextureCache.cpp",
+              "GS/Renderers/HW/GSTextureCache.h",
+              "GS/Renderers/HW/GSRendererHW.cpp",
+              "GS/Renderers/HW/GSRendererHW.h",
+          ]
+          for rel in keep_jd:
+              jd = Path("jd4029/pcsx2") / rel
+              out = dst / rel
+              if jd.exists():
+                  out.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copy2(jd, out)
+          PY
 
           # The texture-replacement implementation must be byte-for-byte the
           # exact 1.7.4029 source after the overlay.
