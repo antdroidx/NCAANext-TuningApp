@@ -202,6 +202,20 @@ jobs:
           cp /tmp/aether-host/MemoryTypes.h mobile/app/src/main/cpp/pcsx2/MemoryTypes.h
           cp /tmp/aether-host/IopDma.h mobile/app/src/main/cpp/pcsx2/IopDma.h
           cp /tmp/aether-host/IopDma.cpp mobile/app/src/main/cpp/pcsx2/IopDma.cpp
+
+          # Aether's SPU2 DMA implementation uses the older global
+          # g_iopNextEventCycle. JD4029 moved that scheduler value into psxRegs.
+          # Keep Aether's Android/SPU2 DMA behavior but bind it to the JD4029 state.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/IopDma.cpp")
+          t = p.read_text()
+          n = t.count("g_iopNextEventCycle")
+          if n != 5:
+              raise SystemExit(f"Expected 5 Aether g_iopNextEventCycle references, found {n}")
+          t = t.replace("g_iopNextEventCycle", "psxRegs.iopNextEventCycle")
+          p.write_text(t)
+          PY
           cp /tmp/aether-host/MemoryCardFile.h mobile/app/src/main/cpp/pcsx2/MemoryCardFile.h
           cp /tmp/aether-host/MemoryCardFile.cpp mobile/app/src/main/cpp/pcsx2/MemoryCardFile.cpp
           cp /tmp/aether-host/MemoryCardFolder.h mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.h
