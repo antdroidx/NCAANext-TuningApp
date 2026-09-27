@@ -445,6 +445,81 @@ jobs:
           p.write_text(t)
           PY
 
+          # Bridge JD4029's newer config code to the older Android common runtime.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          # Old Android SettingsWrapper has no float overload. Route floats through
+          # its existing double overload so both load and save paths keep working.
+          p = Path("mobile/app/src/main/cpp/common/SettingsWrapper.h")
+          t = p.read_text()
+          marker = "virtual void Entry(const char* section, const char* var, double& value, const double defvalue = 0.0) = 0;"
+          helper = """virtual void Entry(const char* section, const char* var, double& value, const double defvalue = 0.0) = 0;
+\tvoid Entry(const char* section, const char* var, float& value, const float defvalue = 0.0f)
+\t{
+\t\tdouble temp = static_cast<double>(value);
+\t\tEntry(section, var, temp, static_cast<double>(defvalue));
+\t\tvalue = static_cast<float>(temp);
+\t}"""
+          if "float& value" not in t:
+              if marker not in t:
+                  raise SystemExit("SettingsWrapper double Entry anchor not found")
+              t = t.replace(marker, helper, 1)
+          p.write_text(t)
+
+          p = Path("mobile/app/src/main/cpp/pcsx2/Pcsx2Config.cpp")
+          t = p.read_text()
+
+          # The Android enum-operator macro declares EnumToString() as wxChar*.
+          # Convert JD4029's two local name tables/functions to that ABI.
+          for table in ("tbl_SpeedhackNames", "tbl_GamefixNames"):
+              m = re.search(r"(const char\* const " + table + r"\[\] =\s*\{)(.*?)(\};)", t, re.S)
+              if not m:
+                  raise SystemExit(f"{table} block not found")
+              body = re.sub(r'(?<!L)"([^"\\]*(?:\\.[^"\\]*)*)"', r'L"\1"', m.group(2))
+              t = t[:m.start()] + m.group(1).replace("const char* const", "const wxChar* const") + body + m.group(3) + t[m.end():]
+
+          t = t.replace("const char* EnumToString(SpeedhackId id)", "const wxChar* EnumToString(SpeedhackId id)", 1)
+          t = t.replace("const char* EnumToString(GamefixId id)", "const wxChar* EnumToString(GamefixId id)", 1)
+
+          # The old common/Path layer has wxFileName::IsAbsolute and
+          # Path::CombineStdString rather than the newer std::string helpers.
+          t = t.replace(
+              "if (!HWDumpDirectory.empty() && !Path::IsAbsolute(HWDumpDirectory))\n\t\tHWDumpDirectory = Path::Combine(EmuFolders::DataRoot, HWDumpDirectory);",
+              "if (!HWDumpDirectory.empty() && !wxFileName(StringUtil::UTF8StringToWxString(HWDumpDirectory)).IsAbsolute())\n\t\tHWDumpDirectory = Path::CombineStdString(EmuFolders::DataRoot, HWDumpDirectory);",
+              1)
+          t = t.replace(
+              "if (!SWDumpDirectory.empty() && !Path::IsAbsolute(SWDumpDirectory))\n\t\tSWDumpDirectory = Path::Combine(EmuFolders::DataRoot, SWDumpDirectory);",
+              "if (!SWDumpDirectory.empty() && !wxFileName(StringUtil::UTF8StringToWxString(SWDumpDirectory)).IsAbsolute())\n\t\tSWDumpDirectory = Path::CombineStdString(EmuFolders::DataRoot, SWDumpDirectory);",
+              1)
+
+          # Retained Aether USB is the legacy plugin and does not expose JD4029's
+          # USB namespace/configuration helpers. Its own plugin handles USB config.
+          start = t.find("void Pcsx2Config::USBOptions::LoadSave(SettingsWrapper& wrap)")
+          end = t.find("\nbool Pcsx2Config::USBOptions::Port::operator==", start)
+          if start < 0 or end < 0:
+              raise SystemExit("USBOptions::LoadSave block not found")
+          usb_stub = """void Pcsx2Config::USBOptions::LoadSave(SettingsWrapper& wrap)
+{
+\t(void)wrap;
+}
+"""
+          t = t[:start] + usb_stub + t[end:]
+
+          # MXCSR control is x86-specific. ARM64 has no SSE MXCSR state to save.
+          for old in (
+              "\tconst SSE_MXCSR prev_mxcsr(SSE_MXCSR::GetCurrent());\n",
+              "\tSSE_MXCSR::SetCurrent(SSE_MXCSR{SYSTEM_sseMXCSR});\n",
+              "\tSSE_MXCSR::SetCurrent(prev_mxcsr);\n",
+          ):
+              if old not in t:
+                  raise SystemExit(f"Expected MXCSR line not found: {old.strip()}")
+              t = t.replace(old, "", 1)
+
+          p.write_text(t)
+          PY
+
           # Aether memRead64 writes through an output argument; JD4029's patch
           # engine expects memRead64 to return u64. Adapt only these two reads.
           python3 - <<'PY'
