@@ -210,11 +210,13 @@ jobs:
           anchor = "typedef void __fastcall ClearFunc_t( u32 addr, u32 qwc );"
           if anchor not in t:
               raise SystemExit("Memory.cpp ClearFunc anchor not found")
-          wrappers = """static void __fastcall gsWrite64_generic_vtlb(u32 mem, const mem64_t* value) { gsWrite64_generic(mem, *value); }
-static void __fastcall gsWrite64_page_00_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_00(mem, *value); }
-static void __fastcall gsWrite64_page_01_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_01(mem, *value); }
-
-"""
+          wrappers = "\n".join([
+              "static void __fastcall gsWrite64_generic_vtlb(u32 mem, const mem64_t* value) { gsWrite64_generic(mem, *value); }",
+              "static void __fastcall gsWrite64_page_00_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_00(mem, *value); }",
+              "static void __fastcall gsWrite64_page_01_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_01(mem, *value); }",
+              "",
+              "",
+          ])
           if "gsWrite64_generic_vtlb" not in t:
               t = t.replace(anchor, wrappers + anchor, 1)
           reps = {
