@@ -378,6 +378,28 @@ jobs:
           s = s.replace("\tPAD::Update();", "\t// Android host polls PAD devices in VMManager.")
           p.write_text(s)
           PY
+
+          # JD4029's newer SPU2 API can adjust the device sample-rate multiplier.
+          # The Aether Android SPU2 host retained above predates that namespace/API;
+          # its own Counters.cpp intentionally leaves these three calls disabled.
+          # Match the Android host behavior while keeping JD4029's timing logic.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Counters.cpp")
+          s = p.read_text()
+          calls = [
+              "SPU2::SetDeviceSampleRateMultiplier(1.0);",
+              "SPU2::SetDeviceSampleRateMultiplier(ratio);",
+          ]
+          found = sum(s.count(x) for x in calls)
+          if found != 3:
+              raise SystemExit(f"Expected 3 JD4029 SPU2 sample-rate calls, found {found}")
+          s = s.replace("SPU2::SetDeviceSampleRateMultiplier(1.0);",
+                        "/* Aether Android SPU2 has no sample-rate multiplier API. */")
+          s = s.replace("SPU2::SetDeviceSampleRateMultiplier(ratio);",
+                        "/* Aether Android SPU2 has no sample-rate multiplier API. */")
+          p.write_text(s)
+          PY
           # Keep the Android/Aether common runtime. Exact 4029 common is desktop-oriented
           # and breaks the mobile host ABI (Threading/EventSource/etc.). The emulation
           # core and GS/texture code remain exact 4029.
