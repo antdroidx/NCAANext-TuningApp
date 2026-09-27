@@ -524,6 +524,61 @@ jobs:
           p.write_text(t)
           PY
 
+          # Finish bridging the remaining JD4029 std::string path calls to the
+          # older Aether wx-based Path runtime. This clears the entire Path API
+          # mismatch class in Pcsx2Config.cpp rather than fixing one line at a time.
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("mobile/app/src/main/cpp/pcsx2/Pcsx2Config.cpp")
+          t = p.read_text()
+          replacements = [
+              (
+                  "ret = Path::Combine(EmuFolders::Bios, BaseFilenames.Bios);",
+                  "ret = Path::CombineStdString(EmuFolders::Bios, BaseFilenames.Bios);",
+              ),
+              (
+                  "return Path::Combine(EmuFolders::MemoryCards, Mcd[slot].Filename);",
+                  "return Path::CombineStdString(EmuFolders::MemoryCards, Mcd[slot].Filename);",
+              ),
+              (
+                  "if (!Path::IsAbsolute(value))\n\t\tvalue = Path::Combine(root, value);",
+                  "if (!wxFileName(StringUtil::UTF8StringToWxString(value)).IsAbsolute())\n\t\tvalue = Path::CombineStdString(root, value);",
+              ),
+              (
+                  "const std::string path(Path::Combine(Logs, name));",
+                  "const std::string path(Path::CombineStdString(Logs, name));",
+              ),
+          ]
+          for old, new in replacements:
+              if old not in t:
+                  raise SystemExit(f"Remaining Pcsx2Config path anchor not found: {old}")
+              t = t.replace(old, new, 1)
+
+          # All JD4029 Path calls in this translation unit should now be mapped
+          # to APIs actually exposed by Aether's older common/Path.h.
+          leftovers = [x for x in ("Path::IsAbsolute(", "Path::Combine(") if x in t]
+          if leftovers:
+              raise SystemExit(f"Unbridged Pcsx2Config Path APIs remain: {leftovers}")
+          p.write_text(t)
+
+          # JD4029 names the PS1 CD-ROM header Ps1CD.h; the Aether Android host
+          # carries the same cdrInterrupt/cdrReadInterrupt interface in CdRom.h.
+          # Apply this across all surviving core sources so another translation
+          # unit cannot fail on the same renamed header after R3000A.cpp.
+          root = Path("mobile/app/src/main/cpp/pcsx2")
+          count = 0
+          for src in root.rglob("*"):
+              if src.suffix not in (".cpp", ".h", ".inl"):
+                  continue
+              text = src.read_text(errors="ignore")
+              old = '#include "CDVD/Ps1CD.h"'
+              if old in text:
+                  src.write_text(text.replace(old, '#include "CDVD/CdRom.h"'))
+                  count += 1
+          print(f"Bridged Ps1CD.h include in {count} surviving source file(s)")
+          PY
+
           # Aether memRead64 writes through an output argument; JD4029's patch
           # engine expects memRead64 to return u64. Adapt only these two reads.
           python3 - <<'PY'
@@ -694,9 +749,46 @@ jobs:
       - name: Build exact-4029 core with Android ARM64 recompiler
         working-directory: mobile
         run: |
-          set -euxo pipefail
+          set -uxo pipefail
           chmod +x gradlew
+
+          # Clang normally stops after 20 diagnostics in one translation unit.
+          # Remove that cap so a failing file exposes every error it can in one pass.
+          export CXXFLAGS="${CXXFLAGS:-} -ferror-limit=0"
+
+          # Let Gradle configure and attempt the normal APK build first.
+          set +e
           ./gradlew :app:assembleDebug --stacktrace
+          GRADLE_RC=$?
+          set -e
+
+          # If native compilation failed, rerun every generated ARM64 Ninja graph
+          # with -k 0 (keep going indefinitely). This compiles past independent
+          # failures and gives us a much larger batch of diagnostics per workflow.
+          if [ "$GRADLE_RC" -ne 0 ]; then
+            echo "::group::Full ARM64 native compile sweep"
+            NINJA="$ANDROID_HOME/cmake/3.22.1/bin/ninja"
+            if [ ! -x "$NINJA" ]; then
+              NINJA="$(command -v ninja || true)"
+            fi
+
+            if [ -n "$NINJA" ]; then
+              FOUND=0
+              while IFS= read -r BUILD_NINJA; do
+                FOUND=1
+                BUILD_DIR="$(dirname "$BUILD_NINJA")"
+                echo "Sweeping native build graph: $BUILD_DIR"
+                "$NINJA" -C "$BUILD_DIR" -k 0 || true
+              done < <(find app/.cxx -type f -name build.ninja -path '*arm64-v8a*' -print)
+              if [ "$FOUND" -eq 0 ]; then
+                echo "No generated ARM64 build.ninja found for diagnostic sweep."
+              fi
+            else
+              echo "Ninja executable not found; skipping diagnostic keep-going sweep."
+            fi
+            echo "::endgroup::"
+            exit "$GRADLE_RC"
+          fi
 
       - name: Collect APK
         run: |
