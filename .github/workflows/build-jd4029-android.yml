@@ -304,19 +304,13 @@ jobs:
               raise SystemExit("TextureName legacy bit field not found")
           tr = tr.replace(old, "u32 TEX0_TCC : 1; // JD4029 compatibility", 1)
 
-          old = '''__fi void RemoveUnusedBits()
-              {
-                  // Remove bits which were previously present, but no longer used.
-                  unused0 = 0;
-              }'''
-          new = '''__fi void RemoveUnusedBits()
-              {
-                  // Compatibility build: this bit is TEX0.TCC in JDHalfrack 1.7.4029
-                  // replacement filenames, so preserve it when parsing legacy packs.
-              }'''
-          if old not in tr:
-              raise SystemExit("RemoveUnusedBits block not found")
-          tr = tr.replace(old, new, 1)
+          # After renaming unused0 -> TEX0_TCC above, preserve the bit when parsing
+          # legacy JD4029 replacement filenames instead of clearing it.
+          old = "unused0 = 0;"
+          if old in tr:
+              tr = tr.replace(old, "(void)TEX0_TCC;", 1)
+          elif "(void)TEX0_TCC;" not in tr:
+              raise SystemExit("RemoveUnusedBits assignment not found")
 
           old = "name.TEX0_TH = hash.TEX0.TH;\n"
           if old not in tr:
