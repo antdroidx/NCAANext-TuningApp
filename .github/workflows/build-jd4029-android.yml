@@ -200,6 +200,34 @@ jobs:
           cp /tmp/aether-host/Memory.h mobile/app/src/main/cpp/pcsx2/Memory.h
           cp /tmp/aether-host/Memory.cpp mobile/app/src/main/cpp/pcsx2/Memory.cpp
           cp /tmp/aether-host/MemoryTypes.h mobile/app/src/main/cpp/pcsx2/MemoryTypes.h
+
+          # Aether's vtlb ABI passes 64-bit writes by pointer, while JD4029's
+          # GS write entry points take u64 by value. Bridge only those GS handlers.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/Memory.cpp")
+          t = p.read_text()
+          anchor = "typedef void __fastcall ClearFunc_t( u32 addr, u32 qwc );"
+          if anchor not in t:
+              raise SystemExit("Memory.cpp ClearFunc anchor not found")
+          wrappers = """static void __fastcall gsWrite64_generic_vtlb(u32 mem, const mem64_t* value) { gsWrite64_generic(mem, *value); }
+static void __fastcall gsWrite64_page_00_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_00(mem, *value); }
+static void __fastcall gsWrite64_page_01_vtlb(u32 mem, const mem64_t* value) { gsWrite64_page_01(mem, *value); }
+
+"""
+          if "gsWrite64_generic_vtlb" not in t:
+              t = t.replace(anchor, wrappers + anchor, 1)
+          reps = {
+              "gsWrite64_generic, gsWrite128_generic": "gsWrite64_generic_vtlb, gsWrite128_generic",
+              "gsWrite64_page_00, gsWrite128_page_00": "gsWrite64_page_00_vtlb, gsWrite128_page_00",
+              "gsWrite64_page_01, gsWrite128_page_01": "gsWrite64_page_01_vtlb, gsWrite128_page_01",
+          }
+          for old, new in reps.items():
+              if old not in t:
+                  raise SystemExit(f"Memory.cpp handler pair not found: {old}")
+              t = t.replace(old, new, 1)
+          p.write_text(t)
+          PY
           cp /tmp/aether-host/IopDma.h mobile/app/src/main/cpp/pcsx2/IopDma.h
           cp /tmp/aether-host/IopDma.cpp mobile/app/src/main/cpp/pcsx2/IopDma.cpp
 
@@ -220,6 +248,20 @@ jobs:
           cp /tmp/aether-host/MemoryCardFile.cpp mobile/app/src/main/cpp/pcsx2/MemoryCardFile.cpp
           cp /tmp/aether-host/MemoryCardFolder.h mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.h
           cp /tmp/aether-host/MemoryCardFolder.cpp mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.cpp
+
+          # wxWidgets on the Android scaffold does not expose wxGetLocalTimeMillis.
+          # Use the host tick source for equivalent millisecond timestamps/timing.
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("mobile/app/src/main/cpp/pcsx2/MemoryCardFolder.cpp")
+          t = p.read_text()
+          old = "wxGetLocalTimeMillis().GetValue()"
+          n = t.count(old)
+          if n != 3:
+              raise SystemExit(f"Expected 3 wxGetLocalTimeMillis calls, found {n}")
+          t = t.replace(old, "((GetCPUTicks() * 1000ULL) / GetTickFrequency())")
+          p.write_text(t)
+          PY
 
           # MemoryCardFile.h references wxDirName, which is declared in common/Path.h.
           # The original scaffold gets it transitively; make the dependency explicit
@@ -308,9 +350,18 @@ jobs:
           cp -a /tmp/aether-host/DebugTools mobile/app/src/main/cpp/pcsx2/DebugTools
 
 
-          # Adapt JD4029 debug-only interfaces to the older Android host runtime.
+          # Adapt JD4029/debug host interfaces to the older Android common runtime.
           python3 - <<'PY'
           from pathlib import Path
+
+          # Thread names are diagnostic only. The Android common headers in this
+          # scaffold do not expose SetNameOfCurrentThread at these call sites.
+          for fn in ("MTGS.cpp", "MTVU.cpp"):
+              p = Path("mobile/app/src/main/cpp/pcsx2") / fn
+              t = p.read_text()
+              t = t.replace('Threading::SetNameOfCurrentThread("GS");', '/* Android host: GS thread name omitted. */')
+              t = t.replace('Threading::SetNameOfCurrentThread("MTVU");', '/* Android host: MTVU thread name omitted. */')
+              p.write_text(t)
 
           # Aether's Breakpoints API has one global memcheck list instead of a CPU selector.
           p = Path("mobile/app/src/main/cpp/pcsx2/Interpreter.cpp")
