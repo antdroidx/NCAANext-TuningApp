@@ -76,6 +76,8 @@ jobs:
           cp mobile/app/src/main/cpp/pcsx2/IopBios.h /tmp/aether-host/IopBios.h
           cp mobile/app/src/main/cpp/pcsx2/IopBios.cpp /tmp/aether-host/IopBios.cpp
           cp -a mobile/app/src/main/cpp/pcsx2/USB /tmp/aether-host/USB
+          cp -a mobile/app/src/main/cpp/pcsx2/SPU2 /tmp/aether-host/SPU2
+          cp mobile/app/src/main/cpp/pcsx2/ps2/eeHwTraceLog.inl /tmp/aether-host/eeHwTraceLog.inl
           cp mobile/app/src/main/cpp/pcsx2/IopMem.h /tmp/aether-host/IopMem.h
           cp mobile/app/src/main/cpp/pcsx2/IopMem.cpp /tmp/aether-host/IopMem.cpp
           cp mobile/app/src/main/cpp/pcsx2/IopHw.h /tmp/aether-host/IopHw.h
@@ -230,6 +232,9 @@ jobs:
           cp /tmp/aether-host/IopBios.cpp mobile/app/src/main/cpp/pcsx2/IopBios.cpp
           rm -rf mobile/app/src/main/cpp/pcsx2/USB
           cp -a /tmp/aether-host/USB mobile/app/src/main/cpp/pcsx2/USB
+          rm -rf mobile/app/src/main/cpp/pcsx2/SPU2
+          cp -a /tmp/aether-host/SPU2 mobile/app/src/main/cpp/pcsx2/SPU2
+          cp /tmp/aether-host/eeHwTraceLog.inl mobile/app/src/main/cpp/pcsx2/ps2/eeHwTraceLog.inl
           cp /tmp/aether-host/IopMem.h mobile/app/src/main/cpp/pcsx2/IopMem.h
           cp /tmp/aether-host/IopMem.cpp mobile/app/src/main/cpp/pcsx2/IopMem.cpp
           cp /tmp/aether-host/IopHw.h mobile/app/src/main/cpp/pcsx2/IopHw.h
@@ -301,15 +306,8 @@ jobs:
               s = s.replace(old, "CBreakPoints::GetMemChecks()", 1)
           p.write_text(s)
 
-          # Aether's StringUtil predates U128ToString. Format the trace value locally.
-          p = Path("mobile/app/src/main/cpp/pcsx2/ps2/eeHwTraceLog.inl")
-          s = p.read_text()
-          old = "\t\tvalStr = StringUtil::U128ToString(r128_to_u128(val));"
-          new = "\t\tconst u128 trace_u128 = r128_to_u128(val);\n\t\tvalStr = fmt::format(\"0x{:08X}.{:08X}.{:08X}.{:08X}\", trace_u128._u32[0], trace_u128._u32[1], trace_u128._u32[2], trace_u128._u32[3]);"
-          if old not in s:
-              raise SystemExit("JD4029 U128 trace formatter line not found")
-          s = s.replace(old, new, 1)
-          p.write_text(s)
+          # Hardware trace logging is restored from the Android scaffold alongside
+          # Hw.cpp/HwRead.cpp/HwWrite.cpp, so no JD4029 StringUtil bridge is required.
 
           # If a JD4029 hardware source survives the Android host restore, map its
           # PS1 CD-ROM include to Aether's equivalent name.
