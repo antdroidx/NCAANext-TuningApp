@@ -411,6 +411,19 @@ jobs:
 
           test -x "$ZIPALIGN"
           test -x "$APKSIGNER"
+
+          if [[ ! -f "$DEBUG_KEYSTORE" ]]; then
+            mkdir -p "$(dirname "$DEBUG_KEYSTORE")"
+            keytool -genkeypair -v \
+              -keystore "$DEBUG_KEYSTORE" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+          fi
           test -f "$DEBUG_KEYSTORE"
 
           "$ZIPALIGN" -f -P 16 4 "$UNSIGNED_APK" "$ALIGNED_APK"
